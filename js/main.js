@@ -37,21 +37,37 @@ function init() {
     if (animationFrameId) {
         cancelAnimationFrame(animationFrameId);
     }
-    
-    // 유닛 생성
-    const playerTemplates = ['p_knight','p_warrior','p_cavalry','p_archer','p_mage','p_healer'];
-    const enemyTemplates = ['e_troll','e_warrior','e_cavalry','e_archer','e_mage','e_shaman'];
-    
+
+    // 12v12 전투를 위한 유닛 구성
+    const playerTemplates = [
+        'p_knight', 'p_knight', 'p_warrior', 'p_warrior', 'p_warrior', 'p_cavalry', 
+        'p_cavalry', 'p_archer', 'p_archer', 'p_mage', 'p_mage', 'p_healer'
+    ];
+    const enemyTemplates = [
+        'e_troll', 'e_troll', 'e_warrior', 'e_warrior', 'e_warrior', 'e_cavalry', 
+        'e_cavalry', 'e_archer', 'e_archer', 'e_mage', 'e_mage', 'e_shaman'
+    ];
+
     const managers = { logManager, vfxManager, eventManager, statusEffectManager };
-    playerUnits = playerTemplates.map((key, i) => new Unit(UNIT_TEMPLATES[key], "player", 1, i + 2, managers));
-    enemyUnits = enemyTemplates.map((key, i) => new Unit(UNIT_TEMPLATES[key], "enemy", GRID_COLS - 2, i + 2, managers));
-    
+
+    // 12v12 유닛 배치 로직
+    playerUnits = playerTemplates.map((key, i) => {
+        const x = Math.floor(i / 5); // 0, 1, 2 열
+        const y = (i % 5) * 2;       // 0, 2, 4, 6, 8 행
+        return new Unit(UNIT_TEMPLATES[key], "player", x, y, managers);
+    });
+    enemyUnits = enemyTemplates.map((key, i) => {
+        const x = (15 - 1) - Math.floor(i / 5); // 14, 13, 12 열
+        const y = (i % 5) * 2;
+        return new Unit(UNIT_TEMPLATES[key], "enemy", x, y, managers);
+    });
+
     allUnits=[...playerUnits,...enemyUnits];
 
     // 매니저 시스템 작동
-    battleMaster.prepareBattle(allUnits, battleContext, logManager);
+    battleMaster.prepareBattle(allUnits, battleContext);
     allUnits.forEach(unit => unit.registerTriggers());
-    
+
     logManager.add("--- 전투 시작! 패시브 스킬 발동 ---");
     allUnits.forEach(t=>t.applyPassiveSkills());
     logManager.flush();
@@ -59,7 +75,7 @@ function init() {
     logManager.clear();
     logManager.add("전투 준비 완료. 시뮬레이션 시작 버튼을 누르세요.");
     logManager.flush();
-    
+
     // 초기 화면 렌더링
     render(allUnits);
 }
