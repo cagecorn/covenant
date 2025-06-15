@@ -144,7 +144,29 @@ const SKILLS = {
         }
     },
     heal: { name: '치유', type: 'active', probability: 0.6, effect: (caster, target) => { const healAmount = Math.floor(caster.attackPower * 2.5); target.hp = Math.min(target.maxHp, target.hp + healAmount); logMessage(`💖 ${caster.name}의 [${SKILLS.heal.name}]! ${target.name}의 체력 ${healAmount} 회복!`); }},
-    stoneSkin: { name: '스톤 스킨', type: 'passive', effect: (caster) => { caster.shield += 20; caster.maxShield += 20; logMessage(`🛡️ ${caster.name} [${SKILLS.stoneSkin.name}] 발동! 보호막 20 증가!`); }}
+    stoneSkin: { name: '스톤 스킨', type: 'passive', effect: (caster) => { caster.shield += 20; caster.maxShield += 20; logMessage(`🛡️ ${caster.name} [${SKILLS.stoneSkin.name}] 발동! 보호막 20 증가!`); }},
+    deathRattle: {
+        name: '죽음의 메아리',
+        type: 'triggered',
+        eventName: 'unitDeath',
+        effect: (payload, owner) => {
+            if (payload.unit === owner) {
+                logMessage(`🔥 ${owner.name}의 [죽음의 메아리] 발동!`);
+            }
+        }
+    },
+    vampiricTouch: {
+        name: '흡혈의 손길',
+        type: 'triggered',
+        eventName: 'unitAttack',
+        effect: (payload, owner) => {
+            if (payload.caster === owner) {
+                const healAmount = Math.floor(payload.damage * 0.2);
+                owner.hp = Math.min(owner.maxHp, owner.hp + healAmount);
+                logMessage(`🩸 ${owner.name}이 [흡혈의 손길]로 체력을 ${healAmount} 회복!`);
+            }
+        }
+    }
 };
 const CLASS_STATS = { Warrior: { range: 1, moveSpeed: 3, icon: '⚔️' }, Cavalry: { range: 2, moveSpeed: 5, icon: '🐎' }, Archer: { range: 4, moveSpeed: 3, icon: '🏹' }, Mage: { range: 3, moveSpeed: 2, icon: '🔮' }, Healer: { range: 3, moveSpeed: 3, icon: '💖' }};
 
@@ -165,6 +187,14 @@ class Unit {
     }
     removeStatus(statusName) {
         statusEffectManager.remove(this, statusName);
+    }
+    registerTriggers() {
+        this.skills.forEach(key => {
+            const skill = SKILLS[key];
+            if (skill && skill.type === 'triggered') {
+                eventManager.subscribe(skill.eventName, payload => skill.effect(payload, this));
+            }
+        });
     }
     takeTurn(enemies, allies) {
         if(this.isDead || this.hasActed) return;
@@ -234,6 +264,7 @@ function init(){
     });
     
     allUnits=[...playerUnits,...enemyUnits];
+    allUnits.forEach(unit => unit.registerTriggers());
     logMessage("--- 12 vs 12 전투 시작! 패시브 스킬 발동 ---");
     allUnits.forEach(t=>t.applyPassiveSkills());
     flushLog();
