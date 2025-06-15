@@ -9,6 +9,37 @@ backgroundCanvas.width = canvas.width;
 backgroundCanvas.height = canvas.height;
 const backgroundCtx = backgroundCanvas.getContext('2d');
 
+// [로그개선] 전투 로그를 체계적으로 관리하는 매니저
+class BattleLogManager {
+    constructor(logElement) {
+        this.logElement = logElement;
+        this.logBuffer = [];
+    }
+
+    // 로그 메시지를 버퍼에 추가
+    add(message, type = 'info') {
+        this.logBuffer.push({ message, type });
+    }
+
+    // 버퍼의 모든 로그를 화면에 출력
+    flush() {
+        if (this.logBuffer.length > 0) {
+            const newLogs = this.logBuffer
+                .map(log => `<div class="log-${log.type}">${log.message}</div>`)
+                .join('');
+            this.logElement.innerHTML += newLogs;
+            this.logElement.scrollTop = this.logElement.scrollHeight;
+            this.logBuffer = [];
+        }
+    }
+
+    // 로그창 초기화
+    clear() {
+        this.logElement.innerHTML = "";
+        this.logBuffer = [];
+    }
+}
+
 // [총괄 매니저] 전투 외부 요인을 반영하는 총괄 매니저
 const battleMaster = {
     prepareBattle: (units, context) => {
