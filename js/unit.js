@@ -149,20 +149,42 @@ export class Unit {
     moveTowards(target, untilInRange = false) {
         let moved = 0;
         while (moved < this.moveSpeed) {
-            const distance = this.getDistance(target);
-            if (distance === 0 || (untilInRange && distance <= this.range)) break;
-            let moveX = 0, moveY = 0;
-            if (Math.abs(target.x - this.x) > Math.abs(target.y - this.y)) {
-                moveX = Math.sign(target.x - this.x);
-            } else if (target.y !== this.y) {
-                moveY = Math.sign(target.y - this.y);
-            } else if (target.x !== this.x) {
-                moveX = Math.sign(target.x - this.x);
-            } else {
+            const currentDist = this.getDistance(target);
+            if (currentDist === 0) break;
+            if (untilInRange && currentDist <= this.range) break;
+            // 근접 유닛의 경우, 사거리 1 안으로 들어오면 멈춤
+            if (!untilInRange && currentDist <= 1) break;
+
+            let bestNextX = this.x;
+            let bestNextY = this.y;
+            let bestDist = currentDist;
+
+            // 상하좌우 한 칸씩 움직여보고, 타겟과 가장 가까워지는 지점을 찾음
+            const M_HORIZONTAL = [1, -1, 0, 0];
+            const M_VERTICAL = [0, 0, 1, -1];
+
+            for (let i = 0; i < 4; i++) {
+                const nextX = this.x + M_HORIZONTAL[i];
+                const nextY = this.y + M_VERTICAL[i];
+
+                // 맵 밖으로 나가지 않는지 확인
+                if (nextX < 0 || nextX >= 15 || nextY < 0 || nextY >= 10) continue;
+
+                const dist = Math.abs(nextX - target.x) + Math.abs(nextY - target.y);
+                if (dist < bestDist) {
+                    bestDist = dist;
+                    bestNextX = nextX;
+                    bestNextY = nextY;
+                }
+            }
+
+            if (bestNextX === this.x && bestNextY === this.y) {
+                // 더 이상 접근할 수 없으면 이동 종료
                 break;
             }
-            if (this.x + moveX >= 0 && this.x + moveX < 15) this.x += moveX;
-            if (this.y + moveY >= 0 && this.y + moveY < 10) this.y += moveY;
+
+            this.x = bestNextX;
+            this.y = bestNextY;
             moved++;
         }
     }
