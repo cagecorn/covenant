@@ -41,6 +41,65 @@ class BattleLogManager {
     }
 }
 
+// [시각효과] 데미지 숫자, 상태이상 아이콘 등 시각 효과를 관리하는 매니저
+class VisualEffectManager {
+    constructor() {
+        this.effects = []; // 화면에 표시될 모든 시각 효과 목록
+    }
+
+    // 데미지/힐 숫자 팝업 효과 추가
+    addPopup(text, target, color = 'white') {
+        const effect = {
+            id: (Math.random() + 1).toString(36).substring(7),
+            text,
+            color,
+            x: target.x * CELL_SIZE + CELL_SIZE / 2,
+            y: target.y * CELL_SIZE,
+            duration: 60, // 60프레임 (약 1초) 동안 표시
+        };
+        this.effects.push(effect);
+    }
+
+    // 모든 시각 효과를 화면에 그림
+    draw(ctx) {
+        this.effects = this.effects.filter(effect => {
+            // 효과 그리기
+            ctx.fillStyle = effect.color;
+            ctx.font = 'bold 16px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(effect.text, effect.x, effect.y);
+
+            // 효과 상태 업데이트
+            effect.y -= 0.5; // 위로 떠오르는 효과
+            effect.duration--;
+
+            return effect.duration > 0; // 지속시간이 끝나면 목록에서 제거
+        });
+    }
+
+    // 유닛 머리 위에 상태이상 아이콘 그리기
+    drawStatusIcons(ctx, unit) {
+        const statuses = Object.keys(unit.statusEffects);
+        if (statuses.length === 0) return;
+
+        const startX = unit.x * CELL_SIZE + (CELL_SIZE - statuses.length * 12) / 2;
+        statuses.forEach((statusName, i) => {
+            const icon = this.getStatusIcon(statusName);
+            ctx.font = '12px sans-serif';
+            ctx.fillText(icon, startX + i * 12, unit.y * CELL_SIZE - 10);
+        });
+    }
+
+    getStatusIcon(statusName) {
+        switch(statusName) {
+            case 'paralysis': return '⚡';
+            case 'confusion': return '😵';
+            case 'poison': return '☠️';
+            default: return '❓';
+        }
+    }
+}
+
 const logManager = new BattleLogManager(document.getElementById('log'));
 
 // [총괄 매니저] 전투 외부 요인을 반영하는 총괄 매니저
