@@ -101,6 +101,8 @@ class VisualEffectManager {
 }
 
 const logManager = new BattleLogManager(document.getElementById('log'));
+// [시각효과] 전역에서 사용될 비주얼 이펙트 매니저 인스턴스
+const vfxManager = new VisualEffectManager();
 
 // [총괄 매니저] 전투 외부 요인을 반영하는 총괄 매니저
 const battleMaster = {
@@ -247,7 +249,18 @@ const SKILLS = {
             eventManager.publish('skillUsed', { caster: caster, target: target, skill: SKILLS.powerStrike });
         }
     },
-    heal: { name: '치유', type: 'active', probability: 0.6, effect: (caster, target) => { const healAmount = Math.floor(caster.attackPower * 2.5); target.hp = Math.min(target.maxHp, target.hp + healAmount); logManager.add(`💖 ${caster.name}의 [${SKILLS.heal.name}]! ${target.name}의 체력 ${healAmount} 회복!`); }},
+    heal: {
+        name: '치유',
+        type: 'active',
+        probability: 0.6,
+        effect: (caster, target) => {
+            const healAmount = Math.floor(caster.attackPower * 2.5);
+            target.hp = Math.min(target.maxHp, target.hp + healAmount);
+            logManager.add(`💖 ${caster.name}의 [${SKILLS.heal.name}]! ${target.name}의 체력 ${healAmount} 회복!`);
+            // [시각효과] 치유량 팝업 표시
+            vfxManager.addPopup(`+${healAmount}`, target, '#2ed573');
+        }
+    },
     stoneSkin: { name: '스톤 스킨', type: 'passive', effect: (caster) => { caster.shield += 20; caster.maxShield += 20; logManager.add(`🛡️ ${caster.name} [${SKILLS.stoneSkin.name}] 발동! 보호막 20 증가!`); }},
     deathRattle: {
         name: '죽음의 메아리',
@@ -325,6 +338,8 @@ class Unit {
         const shieldDmg = Math.min(this.shield, damage);
         this.shield -= shieldDmg;
         this.hp -= (damage - shieldDmg);
+        // [시각효과] 데미지를 받은 경우 팝업 표시
+        vfxManager.addPopup(`-${damage}`, this, '#ff4757');
         if (this.hp <= 0 && !this.isDead) {
             this.hp = 0;
             this.isDead = true;
