@@ -194,7 +194,49 @@ function init(){
 }
 
 // 나머지 실행 로직은 v0.6과 동일합니다.
-async function runTurn(){logMessage("--- 새로운 턴 시작 ---");const t=allUnits.filter(t=>!t.isDead).sort((t,e)=>t.weight-e.weight);t.forEach(t=>t.hasActed=!1);for(const e of t){if(e.isDead)continue;const i="player"===e.team?enemyUnits.filter(t=>!t.isDead):playerUnits.filter(t=>!t.isDead),s="player"===e.team?playerUnits.filter(t=>!t.isDead):enemyUnits.filter(t=>!t.isDead);e.takeTurn(i,s),await sleep(100)}if(flushLog(),0===playerUnits.filter(t=>!t.isDead).length)return logMessage("패배!"),isSimulationRunning=!1,startBtn.disabled=!1,void flushLog();if(0===enemyUnits.filter(t=>!t.isDead).length)return logMessage("승리!"),isSimulationRunning=!1,startBtn.disabled=!1,void flushLog();isSimulationRunning&&setTimeout(runTurn,500)}
+async function runTurn() {
+    logMessage("--- 새로운 턴 시작 ---");
+    const turnOrder = allUnits
+        .filter(u => !u.isDead)
+        .sort((a, b) => a.weight - b.weight);
+    turnOrder.forEach(u => (u.hasActed = false));
+
+    for (const unit of turnOrder) {
+        if (unit.isDead) continue;
+        const enemies =
+            unit.team === "player"
+                ? enemyUnits.filter(u => !u.isDead)
+                : playerUnits.filter(u => !u.isDead);
+        const allies =
+            unit.team === "player"
+                ? playerUnits.filter(u => !u.isDead)
+                : enemyUnits.filter(u => !u.isDead);
+        unit.takeTurn(enemies, allies);
+        await sleep(100);
+    }
+
+    logMessage("--- 모든 유닛 행동 종료 ---");
+    statusEffectManager.updateTurn();
+    flushLog();
+
+    if (playerUnits.filter(u => !u.isDead).length === 0) {
+        logMessage("패배!");
+        isSimulationRunning = false;
+        startBtn.disabled = false;
+        return flushLog();
+    }
+
+    if (enemyUnits.filter(u => !u.isDead).length === 0) {
+        logMessage("승리!");
+        isSimulationRunning = false;
+        startBtn.disabled = false;
+        return flushLog();
+    }
+
+    if (isSimulationRunning) {
+        setTimeout(runTurn, 500);
+    }
+}
 function preRenderGrid(){backgroundCtx.strokeStyle="#7f8c8d",backgroundCtx.lineWidth=1;for(let t=0;t<=GRID_COLS;t++)backgroundCtx.beginPath(),backgroundCtx.moveTo(t*CELL_SIZE,0),backgroundCtx.lineTo(t*CELL_SIZE,GRID_ROWS*CELL_SIZE),backgroundCtx.stroke();for(let t=0;t<=GRID_ROWS;t++)backgroundCtx.beginPath(),backgroundCtx.moveTo(0,t*CELL_SIZE),backgroundCtx.lineTo(GRID_COLS*CELL_SIZE,t*CELL_SIZE),backgroundCtx.stroke()}
 function drawUnits(t){t.forEach(t=>{if(t.isDead)return;const e=t.x*CELL_SIZE+CELL_SIZE/2,i=t.y*CELL_SIZE+CELL_SIZE/2;ctx.font="24px sans-serif",ctx.textAlign="center",ctx.textBaseline="middle",ctx.fillText(t.icon,e,i),ctx.fillStyle="player"===t.team?"#3498db":"#e74c3c",ctx.beginPath(),ctx.arc(e,i+15,5,0,2*Math.PI),ctx.fill();const s=.8*CELL_SIZE,a=t.hp/t.maxHp;if(ctx.fillStyle="#555",ctx.fillRect(e-s/2,i-20,s,5),ctx.fillStyle="green",ctx.fillRect(e-s/2,i-20,s*a,5),t.maxShield>0){const a=t.shield/t.maxShield;ctx.fillStyle="#555",ctx.fillRect(e-s/2,i-26,s,5),ctx.fillStyle="cyan",ctx.fillRect(e-s/2,i-26,s*a,5)}})}
 function render(t){ctx.clearRect(0,0,canvas.width,canvas.height),ctx.drawImage(backgroundCanvas,0,0),drawUnits(t)}
