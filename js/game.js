@@ -218,7 +218,20 @@ const AI_STRATEGIES = {
     aggressive: (unit, enemies) => { const target = unit.findBestTarget(enemies); if (target) { unit.moveTowards(target); if(unit.isInRange(target)) unit.attemptSkillOrAttack(target); }},
     kiting: (unit, enemies) => { const target = unit.findBestTarget(enemies); if (target) { const distance = unit.getDistance(target); const safeDistance = unit.range - 1; if (distance < safeDistance) unit.moveAwayFrom(target); else if (distance > unit.range) unit.moveTowards(target, true); if(unit.isInRange(target)) unit.attemptSkillOrAttack(target); }},
     assassin: (unit, enemies) => { const priorityClasses = ['Archer', 'Mage', 'Healer']; let priorityTargets = enemies.filter(e => priorityClasses.includes(e.classType)); let target = unit.findBestTarget(priorityTargets); if (!target) target = unit.findBestTarget(enemies); if (target) { unit.moveTowards(target); if(unit.isInRange(target)) unit.attemptSkillOrAttack(target); }},
-    support: (unit, enemies, allies) => { const healTarget = allies.concat(unit).filter(a => !a.isDead && a.hp < a.maxHp).sort((a,b) => (a.hp/a.maxHp) - (b.hp/b.maxHp))[0]; if (healTarget) { unit.moveTowards(healTarget, true); if (unit.isInRange(healTarget)) { const healSkill = unit.skills.map(s => SKILLS[s]).find(s => s.name === '치유'); if(healSkill && Math.random() < healSkill.probability) { healSkill.effect(unit, healTarget); return; } } } AI_STRATEGIES.kiting(unit, enemies); }
+    support: (unit, enemies, allies) => {
+        const healTarget = allies.concat(unit).filter(a => !a.isDead && a.hp < a.maxHp).sort((a,b) => (a.hp/a.maxHp) - (b.hp/b.maxHp))[0];
+        if (healTarget) {
+            unit.moveTowards(healTarget, true);
+            if (unit.isInRange(healTarget)) {
+                const healSkill = unit.skills.map(s => SKILLS[s]).find(s => s.name === '치유');
+                if (healSkill && Math.random() < healSkill.probability) {
+                    healSkill.effect(unit, healTarget, { logManager, eventManager, vfxManager, statusEffectManager });
+                    return;
+                }
+            }
+        }
+        AI_STRATEGIES.kiting(unit, enemies);
+    }
 };
 
 const UNIT_TEMPLATES = {
@@ -312,7 +325,9 @@ class Unit {
         this.skills.forEach(key => {
             const skill = SKILLS[key];
             if (skill && skill.type === 'triggered') {
-                eventManager.subscribe(skill.eventName, payload => skill.effect(payload, this));
+                eventManager.subscribe(skill.eventName, payload =>
+                    skill.effect(payload, this, { logManager, eventManager, vfxManager, statusEffectManager })
+                );
             }
         });
     }
@@ -328,7 +343,13 @@ class Unit {
         this.ai(this, enemies, allies); this.hasActed = true; }
     calculateThreat(target) { if (target.isStealthed) return -1; if (target.isTaunting) return Infinity; const distance = this.getDistance(target); return 100 - distance; }
     findBestTarget(enemies) { if (!enemies || enemies.length === 0) return null; let bestTarget = null; let maxThreat = -Infinity; enemies.forEach(enemy => { const threat = this.calculateThreat(enemy); if (threat > maxThreat) { maxThreat = threat; bestTarget = enemy; } }); return maxThreat < 0 ? null : bestTarget; }
-    applyPassiveSkills() { this.skills.forEach(key => SKILLS[key]?.type === 'passive' && SKILLS[key].effect(this)); }
+    applyPassiveSkills() {
+        this.skills.forEach(key => {
+            if (SKILLS[key]?.type === 'passive') {
+                SKILLS[key].effect(this, null, { logManager, eventManager, vfxManager, statusEffectManager });
+            }
+        });
+    }
     getAttackPower() {
         const base = this.attackPower + this.bonusAttack + this.contextualBonus.attack;
         const valorBonus = 1 + (this.shield / this.maxShield) * 0.5;
@@ -349,7 +370,18 @@ class Unit {
     }
     getDistance(target) { return Math.abs(this.x - target.x) + Math.abs(this.y - target.y); }
     isInRange(target) { return this.getDistance(target) <= this.range; }
-    attemptSkillOrAttack(target){ let didUseSkill = false; for (const skillKey of this.skills) { const skill = SKILLS[skillKey]; if (skill?.type === 'active' && skill.name !== '치유' && Math.random() < skill.probability) { skill.effect(this, target); didUseSkill = true; break; } } if (!didUseSkill) this.basicAttack(target); }
+    attemptSkillOrAttack(target){
+        let didUseSkill = false;
+        for (const skillKey of this.skills) {
+            const skill = SKILLS[skillKey];
+            if (skill?.type === 'active' && skill.name !== '치유' && Math.random() < skill.probability) {
+                skill.effect(this, target, { logManager, eventManager, vfxManager, statusEffectManager });
+                didUseSkill = true;
+                break;
+            }
+        }
+        if (!didUseSkill) this.basicAttack(target);
+    }
     basicAttack(target) {
         const damage = this.getAttackPower();
         logManager.add(`⚔️ ${this.name} → ${target.name} 일반 공격! (${damage} 피해)`);

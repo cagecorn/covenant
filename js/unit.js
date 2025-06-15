@@ -42,7 +42,8 @@ export class Unit {
             const skill = SKILLS[key];
             if (skill && skill.type === 'triggered') {
                 eventManager.subscribe(skill.eventName, (payload) => {
-                    if(!this.isDead) skill.effect(payload, this)
+                    if (!this.isDead)
+                        skill.effect(payload, this, { logManager, eventManager, vfxManager, statusEffectManager });
                 });
             }
         });
@@ -80,7 +81,13 @@ export class Unit {
         return enemies.reduce((closest, current) => (this.getDistance(current) < this.getDistance(closest) ? current : closest));
     }
     
-    applyPassiveSkills() { this.skills.forEach(key => SKILLS[key]?.type === 'passive' && SKILLS[key].effect(this)); }
+    applyPassiveSkills() {
+        this.skills.forEach(key => {
+            if (SKILLS[key]?.type === 'passive') {
+                SKILLS[key].effect(this, null, { logManager, eventManager, vfxManager, statusEffectManager });
+            }
+        });
+    }
     
     getAttackPower() {
         const base = this.attackPower + this.bonusAttack + this.contextualBonus.attack;
@@ -110,7 +117,8 @@ export class Unit {
     hasSkill(name) { return this.skills.some(key => SKILLS[key]?.name === name); }
     useSkill(skillName, target) {
         const skillKey = this.skills.find(key => SKILLS[key]?.name === skillName);
-        if (skillKey) SKILLS[skillKey].effect(this, target);
+        if (skillKey)
+            SKILLS[skillKey].effect(this, target, { logManager, eventManager, vfxManager, statusEffectManager });
     }
     
     attemptSkillOrAttack(target) {
