@@ -26,6 +26,34 @@ backgroundCanvas.width = canvas.width;
 backgroundCanvas.height = canvas.height;
 const backgroundCtx = backgroundCanvas.getContext('2d');
 
+// [총괄 매니저] 전투 외부 요인을 반영하는 총괄 매니저
+const battleMaster = {
+    prepareBattle: (units, context) => {
+        logMessage(`--- [${context.terrain}] 지형, [${context.weather}] 날씨에서 전투 시작! ---`);
+        units.forEach(unit => {
+            // 지형 효과 적용
+            if (context.terrain === '숲' && unit.classType === 'Archer') {
+                unit.contextualBonus.attack += 5;
+                logMessage(`🏹 숲 지형 효과로 ${unit.name}의 공격력이 5 증가합니다.`);
+            }
+            // 날씨 효과 적용
+            if (context.weather === '비' && unit.elementalType === 'fire') {
+                unit.contextualBonus.attack -= 5;
+                logMessage(`💧 비 날씨 효과로 화염 속성 ${unit.name}의 공격력이 5 감소합니다.`);
+            }
+            // 그 외 영지 버프, 음식 버프 등 모든 외부 요인을 이곳에서 처리
+        });
+    }
+};
+
+// [총괄 매니저] 이번 전투에 적용될 외부 요인 (임시 데이터)
+const battleContext = {
+    weather: '맑음',
+    terrain: '숲',
+    playerBuffs: [{ type: 'food', effect: 'hp_up', value: 20 }],
+    enemyBuffs: [{ type: 'stage_effect', effect: 'all_stats_up', value: 5 }]
+};
+
 // [트리거 시스템] 게임 내 모든 이벤트를 관장하는 방송국
 class EventManager {
     constructor() {
@@ -177,7 +205,8 @@ class Unit {
         this.team = team; this.x = x; this.y = y; this.maxHp = this.hp; this.skills = template.skills || [];
         Object.assign(this, CLASS_STATS[this.classType]);
         this.isDead = false; this.hasActed = false; this.shield = this.valor * 2; this.maxShield = this.shield;
-        this.bonusAttack = 0; this.ai = AI_STRATEGIES[template.ai];
+        this.bonusAttack = 0; this.contextualBonus = { attack: 0 };
+        this.ai = AI_STRATEGIES[template.ai];
         this.isTaunting = false; this.isStealthed = false;
         this.statusEffects = {};
     }
@@ -209,7 +238,10 @@ class Unit {
     calculateThreat(target) { if (target.isStealthed) return -1; if (target.isTaunting) return Infinity; const distance = this.getDistance(target); return 100 - distance; }
     findBestTarget(enemies) { if (!enemies || enemies.length === 0) return null; let bestTarget = null; let maxThreat = -Infinity; enemies.forEach(enemy => { const threat = this.calculateThreat(enemy); if (threat > maxThreat) { maxThreat = threat; bestTarget = enemy; } }); return maxThreat < 0 ? null : bestTarget; }
     applyPassiveSkills() { this.skills.forEach(key => SKILLS[key]?.type === 'passive' && SKILLS[key].effect(this)); }
-    getAttackPower() { return Math.floor((this.attackPower + this.bonusAttack) * (1 + (this.shield / this.maxShield) * 0.5)); }
+    getAttackPower() {
+        const contextBonus = this.contextualBonus ? this.contextualBonus.attack : 0;
+        return Math.floor((this.attackPower + this.bonusAttack + contextBonus) * (1 + (this.shield / this.maxShield) * 0.5));
+    }
     takeDamage(damage) {
         const shieldDmg = Math.min(this.shield, damage);
         this.shield -= shieldDmg;
@@ -264,6 +296,7 @@ function init(){
     });
     
     allUnits=[...playerUnits,...enemyUnits];
+    battleMaster.prepareBattle(allUnits, battleContext);
     allUnits.forEach(unit => unit.registerTriggers());
     logMessage("--- 12 vs 12 전투 시작! 패시브 스킬 발동 ---");
     allUnits.forEach(t=>t.applyPassiveSkills());
