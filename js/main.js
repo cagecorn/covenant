@@ -5,7 +5,7 @@ import { UNIT_TEMPLATES } from './data.js';
 import { Unit } from './unit.js';
 import { BattleLogManager, VisualEffectManager, EventManager, StatusEffectManager, battleMaster } from './managers.js';
 
-// 전역 변수 및 매니저 인스턴스
+// --- 전역 변수 및 매니저 인스턴스 생성 ---
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const startBtn = document.getElementById('startBtn');
@@ -23,33 +23,31 @@ const backgroundCtx = backgroundCanvas.getContext('2d');
 
 let playerUnits = [], enemyUnits = [], allUnits = [];
 let isSimulationRunning = false;
+let animationFrameId;
 
 const battleContext = {
     weather: '맑음',
     terrain: '숲',
 };
 
+// --- 핵심 기능 함수 ---
+
 function init() {
     logManager.clear();
-    playerUnits = [
-        new Unit(UNIT_TEMPLATES.p_knight, "player", 1, 4),
-        new Unit(UNIT_TEMPLATES.p_warrior, "player", 2, 6),
-        new Unit(UNIT_TEMPLATES.p_cavalry, "player", 2, 2),
-        new Unit(UNIT_TEMPLATES.p_archer, "player", 0, 1),
-        new Unit(UNIT_TEMPLATES.p_mage, "player", 0, 4),
-        new Unit(UNIT_TEMPLATES.p_healer, "player", 0, 7),
-    ];
-    enemyUnits = [
-        new Unit(UNIT_TEMPLATES.e_troll, "enemy", 13, 4),
-        new Unit(UNIT_TEMPLATES.e_warrior, "enemy", 12, 6),
-        new Unit(UNIT_TEMPLATES.e_cavalry, "enemy", 12, 2),
-        new Unit(UNIT_TEMPLATES.e_archer, "enemy", 14, 1),
-        new Unit(UNIT_TEMPLATES.e_mage, "enemy", 14, 4),
-        new Unit(UNIT_TEMPLATES.e_shaman, "enemy", 14, 7),
-    ];
+    if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+    }
+    
+    // 유닛 생성
+    const playerTemplates = ['p_knight','p_warrior','p_cavalry','p_archer','p_mage','p_healer'];
+    const enemyTemplates = ['e_troll','e_warrior','e_cavalry','e_archer','e_mage','e_shaman'];
+    
+    playerUnits = playerTemplates.map((key, i) => new Unit(UNIT_TEMPLATES[key], "player", 1, i + 2));
+    enemyUnits = enemyTemplates.map((key, i) => new Unit(UNIT_TEMPLATES[key], "enemy", GRID_COLS - 2, i + 2));
     
     allUnits=[...playerUnits,...enemyUnits];
 
+    // 매니저 시스템 작동
     battleMaster.prepareBattle(allUnits, battleContext);
     allUnits.forEach(unit => unit.registerTriggers());
     
@@ -61,11 +59,8 @@ function init() {
     logManager.add("전투 준비 완료. 시뮬레이션 시작 버튼을 누르세요.");
     logManager.flush();
     
-    let gameLoop = function(){
-        render(allUnits);
-        if(isSimulationRunning) requestAnimationFrame(gameLoop);
-    };
-    if(!isSimulationRunning) render(allUnits); // 초기 렌더링
+    // 초기 화면 렌더링
+    render(allUnits);
 }
 
 async function runTurn() {
@@ -83,23 +78,28 @@ async function runTurn() {
     statusEffectManager.updateTurn();
     logManager.flush();
 
+    // 승리/패배 조건 확인
     if (playerUnits.every(u => u.isDead)) {
         logManager.add("패배!", 'death');
-        isSimulationRunning = false;
-        startBtn.disabled = false;
-        logManager.flush();
+        stopSimulation();
         return;
     }
     if (enemyUnits.every(u => u.isDead)) {
         logManager.add("승리!", 'death');
-        isSimulationRunning = false;
-        startBtn.disabled = false;
-        logManager.flush();
+        stopSimulation();
         return;
     }
 
     if (isSimulationRunning) setTimeout(runTurn, 500);
 }
+
+function stopSimulation() {
+    isSimulationRunning = false;
+    startBtn.disabled = false;
+    cancelAnimationFrame(animationFrameId);
+}
+
+// --- 렌더링 관련 함수 ---
 
 function render(units) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -159,17 +159,25 @@ function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+function gameLoop() {
+    render(allUnits);
+    if(isSimulationRunning) {
+        animationFrameId = requestAnimationFrame(gameLoop);
+    }
+}
+
+// --- 이벤트 리스너 및 초기 실행 ---
+
 startBtn.addEventListener('click', () => {
     if (isSimulationRunning) return;
+    
+    stopSimulation(); // 이전 루프가 혹시 남아있다면 정리
     isSimulationRunning = true;
     startBtn.disabled = true;
+    
     init();
-
-    let gameLoop = function() {
-        render(allUnits);
-        if(isSimulationRunning) requestAnimationFrame(gameLoop);
-    };
-    requestAnimationFrame(gameLoop);
+    
+    animationFrameId = requestAnimationFrame(gameLoop);
     runTurn();
 });
 
