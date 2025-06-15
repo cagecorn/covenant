@@ -122,7 +122,7 @@ export class StatusEffectManager {
 }
 
 export const battleMaster = {
-    prepareBattle: (units, context) => {
+    prepareBattle: (units, context, logManager) => {
         logManager.add(`--- [${context.terrain}] 지형, [${context.weather}] 날씨에서 전투 시작! ---`);
         units.forEach(unit => {
             if (context.terrain === '숲' && unit.classType === 'Archer') {
