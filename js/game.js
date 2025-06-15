@@ -454,8 +454,46 @@ async function runTurn() {
     }
 }
 function preRenderGrid(){backgroundCtx.strokeStyle="#7f8c8d",backgroundCtx.lineWidth=1;for(let t=0;t<=GRID_COLS;t++)backgroundCtx.beginPath(),backgroundCtx.moveTo(t*CELL_SIZE,0),backgroundCtx.lineTo(t*CELL_SIZE,GRID_ROWS*CELL_SIZE),backgroundCtx.stroke();for(let t=0;t<=GRID_ROWS;t++)backgroundCtx.beginPath(),backgroundCtx.moveTo(0,t*CELL_SIZE),backgroundCtx.lineTo(GRID_COLS*CELL_SIZE,t*CELL_SIZE),backgroundCtx.stroke()}
-function drawUnits(t){t.forEach(t=>{if(t.isDead)return;const e=t.x*CELL_SIZE+CELL_SIZE/2,i=t.y*CELL_SIZE+CELL_SIZE/2;ctx.font="24px sans-serif",ctx.textAlign="center",ctx.textBaseline="middle",ctx.fillText(t.icon,e,i),ctx.fillStyle="player"===t.team?"#3498db":"#e74c3c",ctx.beginPath(),ctx.arc(e,i+15,5,0,2*Math.PI),ctx.fill();const s=.8*CELL_SIZE,a=t.hp/t.maxHp;if(ctx.fillStyle="#555",ctx.fillRect(e-s/2,i-20,s,5),ctx.fillStyle="green",ctx.fillRect(e-s/2,i-20,s*a,5),t.maxShield>0){const a=t.shield/t.maxShield;ctx.fillStyle="#555",ctx.fillRect(e-s/2,i-26,s,5),ctx.fillStyle="cyan",ctx.fillRect(e-s/2,i-26,s*a,5)}})}
-function render(t){ctx.clearRect(0,0,canvas.width,canvas.height),ctx.drawImage(backgroundCanvas,0,0),drawUnits(t)}
+function drawUnits(units){
+    units.forEach(unit=>{
+        if(unit.isDead) return;
+        const centerX = unit.x * CELL_SIZE + CELL_SIZE / 2;
+        const centerY = unit.y * CELL_SIZE + CELL_SIZE / 2;
+        ctx.font = "24px sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(unit.icon, centerX, centerY);
+        ctx.fillStyle = unit.team === "player" ? "#3498db" : "#e74c3c";
+        ctx.beginPath();
+        ctx.arc(centerX, centerY + 15, 5, 0, 2 * Math.PI);
+        ctx.fill();
+
+        const barWidth = 0.8 * CELL_SIZE;
+        const hpRatio = unit.hp / unit.maxHp;
+        ctx.fillStyle = "#555";
+        ctx.fillRect(centerX - barWidth / 2, centerY - 20, barWidth, 5);
+        ctx.fillStyle = "green";
+        ctx.fillRect(centerX - barWidth / 2, centerY - 20, barWidth * hpRatio, 5);
+        if(unit.maxShield>0){
+            const shieldRatio = unit.shield / unit.maxShield;
+            ctx.fillStyle = "#555";
+            ctx.fillRect(centerX - barWidth / 2, centerY - 26, barWidth, 5);
+            ctx.fillStyle = "cyan";
+            ctx.fillRect(centerX - barWidth / 2, centerY - 26, barWidth * shieldRatio, 5);
+        }
+
+        // [시각효과] 상태이상 아이콘 그리기 추가
+        vfxManager.drawStatusIcons(ctx, unit);
+    });
+}
+
+function render(units){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.drawImage(backgroundCanvas,0,0);
+    drawUnits(units);
+    // [시각효과] 모든 시각효과 그리기 추가
+    vfxManager.draw(ctx);
+}
 function sleep(t){return new Promise(e=>setTimeout(e,t))}
 startBtn.addEventListener("click",()=>{isSimulationRunning||(isSimulationRunning=!0,startBtn.disabled=!0,init(),runTurn())});
 window.onload=()=>{preRenderGrid(),init(),render(allUnits)};
