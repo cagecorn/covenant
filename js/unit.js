@@ -5,7 +5,7 @@ import { AI_STRATEGIES, CLASS_STATS, SKILLS } from './data.js';
 import { eventManager, statusEffectManager, logManager, vfxManager } from './main.js';
 
 export class Unit {
-    constructor(template, team, x, y) {
+    constructor(template, team, x, y, managers) {
         Object.assign(this, template);
         this.id = (Math.random() + 1).toString(36).substring(7);
         this.team = team; this.x = x; this.y = y;
@@ -19,6 +19,8 @@ export class Unit {
         this.contextualBonus = { attack: 0, defense: 0, hp: 0 };
         this.ai = AI_STRATEGIES[template.ai];
         this.statusEffects = {};
+        // [의존성 주입] 이 유닛이 사용할 매니저들을 저장합니다.
+        this.managers = managers;
     }
 
     takeTurn(enemies, allies) {
@@ -43,7 +45,7 @@ export class Unit {
             if (skill && skill.type === 'triggered') {
                 eventManager.subscribe(skill.eventName, (payload) => {
                     if (!this.isDead)
-                        skill.effect(payload, this, { logManager, eventManager, vfxManager, statusEffectManager });
+                        skill.effect(payload, this, this.managers);
                 });
             }
         });
@@ -84,7 +86,7 @@ export class Unit {
     applyPassiveSkills() {
         this.skills.forEach(key => {
             if (SKILLS[key]?.type === 'passive') {
-                SKILLS[key].effect(this, null, { logManager, eventManager, vfxManager, statusEffectManager });
+                SKILLS[key].effect(this, null, this.managers);
             }
         });
     }
@@ -117,8 +119,11 @@ export class Unit {
     hasSkill(name) { return this.skills.some(key => SKILLS[key]?.name === name); }
     useSkill(skillName, target) {
         const skillKey = this.skills.find(key => SKILLS[key]?.name === skillName);
-        if (skillKey)
-            SKILLS[skillKey].effect(this, target, { logManager, eventManager, vfxManager, statusEffectManager });
+        const skill = SKILLS[skillKey];
+        if (skill) {
+            // [의존성 주입] 스킬 효과 함수에 저장해둔 매니저들을 전달합니다.
+            skill.effect(this, target, this.managers);
+        }
     }
     
     attemptSkillOrAttack(target) {

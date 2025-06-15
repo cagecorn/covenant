@@ -407,7 +407,7 @@ function init() {
     playerUnits = playerTemplates.map((key, i) => {
         const x = Math.floor(i / 5);
         const y = (i % 5) * 2;
-        return new Unit(UNIT_TEMPLATES[key], "player", x, y);
+        return new Unit(UNIT_TEMPLATES[key], "player", x, y, { logManager, eventManager, vfxManager, statusEffectManager });
     });
 
     const enemyTemplates = [
@@ -417,7 +417,7 @@ function init() {
     enemyUnits = enemyTemplates.map((key, i) => {
         const x = (GRID_COLS - 1) - Math.floor(i / 5);
         const y = (i % 5) * 2;
-        return new Unit(UNIT_TEMPLATES[key], "enemy", x, y);
+        return new Unit(UNIT_TEMPLATES[key], "enemy", x, y, { logManager, eventManager, vfxManager, statusEffectManager });
     });
     
     allUnits=[...playerUnits,...enemyUnits];
