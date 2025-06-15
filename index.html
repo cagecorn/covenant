@@ -105,8 +105,8 @@ class StatusEffectManager {
         });
     }
 }
-const eventManager = new EventManager();
 const statusEffectManager = new StatusEffectManager();
+const eventManager = new EventManager();
 
 const AI_STRATEGIES = {
     aggressive: (unit, enemies) => { const target = unit.findBestTarget(enemies); if (target) { unit.moveTowards(target); if(unit.isInRange(target)) unit.attemptSkillOrAttack(target); }},
@@ -132,7 +132,17 @@ const UNIT_TEMPLATES = {
     e_mage:    { name: '고블린 마법사', classType: 'Mage', ai: 'kiting', hp: 60, attackPower: 30, valor: 10, weight: 38 },
 };
 const SKILLS = {
-    powerStrike: { name: '파워 스트라이크', type: 'active', probability: 0.4, effect: (caster, target) => { const damage = Math.floor(caster.getAttackPower() * 1.5); logMessage(`💥 ${caster.name}의 [${SKILLS.powerStrike.name}]! ${target.name}에게 ${damage} 피해!`); target.takeDamage(damage); }},
+    powerStrike: {
+        name: '파워 스트라이크',
+        type: 'active',
+        probability: 0.4,
+        effect: (caster, target) => {
+            const damage = Math.floor(caster.getAttackPower() * 1.5);
+            logMessage(`💥 ${caster.name}의 [${SKILLS.powerStrike.name}]! ${target.name}에게 ${damage} 피해!`);
+            target.takeDamage(damage);
+            eventManager.publish('skillUsed', { caster: caster, target: target, skill: SKILLS.powerStrike });
+        }
+    },
     heal: { name: '치유', type: 'active', probability: 0.6, effect: (caster, target) => { const healAmount = Math.floor(caster.attackPower * 2.5); target.hp = Math.min(target.maxHp, target.hp + healAmount); logMessage(`💖 ${caster.name}의 [${SKILLS.heal.name}]! ${target.name}의 체력 ${healAmount} 회복!`); }},
     stoneSkin: { name: '스톤 스킨', type: 'passive', effect: (caster) => { caster.shield += 20; caster.maxShield += 20; logMessage(`🛡️ ${caster.name} [${SKILLS.stoneSkin.name}] 발동! 보호막 20 증가!`); }}
 };
@@ -170,11 +180,26 @@ class Unit {
     findBestTarget(enemies) { if (!enemies || enemies.length === 0) return null; let bestTarget = null; let maxThreat = -Infinity; enemies.forEach(enemy => { const threat = this.calculateThreat(enemy); if (threat > maxThreat) { maxThreat = threat; bestTarget = enemy; } }); return maxThreat < 0 ? null : bestTarget; }
     applyPassiveSkills() { this.skills.forEach(key => SKILLS[key]?.type === 'passive' && SKILLS[key].effect(this)); }
     getAttackPower() { return Math.floor((this.attackPower + this.bonusAttack) * (1 + (this.shield / this.maxShield) * 0.5)); }
-    takeDamage(damage) { const shieldDmg = Math.min(this.shield, damage); this.shield -= shieldDmg; this.hp -= (damage - shieldDmg); if (this.hp <= 0) { this.hp = 0; this.isDead = true; logMessage(`💀 ${this.name} 쓰러짐!`); }}
+    takeDamage(damage) {
+        const shieldDmg = Math.min(this.shield, damage);
+        this.shield -= shieldDmg;
+        this.hp -= (damage - shieldDmg);
+        if (this.hp <= 0 && !this.isDead) {
+            this.hp = 0;
+            this.isDead = true;
+            logMessage(`💀 ${this.name} 쓰러짐!`);
+            eventManager.publish('unitDeath', { unit: this });
+        }
+    }
     getDistance(target) { return Math.abs(this.x - target.x) + Math.abs(this.y - target.y); }
     isInRange(target) { return this.getDistance(target) <= this.range; }
     attemptSkillOrAttack(target){ let didUseSkill = false; for (const skillKey of this.skills) { const skill = SKILLS[skillKey]; if (skill?.type === 'active' && skill.name !== '치유' && Math.random() < skill.probability) { skill.effect(this, target); didUseSkill = true; break; } } if (!didUseSkill) this.basicAttack(target); }
-    basicAttack(target) { const damage = this.getAttackPower(); logMessage(`⚔️ ${this.name} → ${target.name} 일반 공격! (${damage} 피해)`); target.takeDamage(damage); }
+    basicAttack(target) {
+        const damage = this.getAttackPower();
+        logMessage(`⚔️ ${this.name} → ${target.name} 일반 공격! (${damage} 피해)`);
+        target.takeDamage(damage);
+        eventManager.publish('unitAttack', { caster: this, target: target, damage: damage });
+    }
     moveTowards(target, untilInRange = false) { let moved = 0; while(moved < this.moveSpeed){ const distance = this.getDistance(target); if (distance === 0 || (untilInRange && distance <= this.range)) break; let moveX = 0, moveY = 0; if (Math.abs(target.x - this.x) > Math.abs(target.y - this.y)) { moveX = Math.sign(target.x - this.x); } else { moveY = Math.sign(target.y - this.y); } this.x += moveX; this.y += moveY; moved++; } }
     moveAwayFrom(target) { let moved = 0; while(moved < this.moveSpeed){ if (this.getDistance(target) >= this.range) break; let moveX = -Math.sign(target.x - this.x); let moveY = -Math.sign(target.y - this.y); if (this.x + moveX < 0 || this.x + moveX >= GRID_COLS) moveX = 0; if (this.y + moveY < 0 || this.y + moveY >= GRID_ROWS) moveY = 0; if (moveX === 0 && moveY === 0) break; this.x += moveX; this.y += moveY; moved++; } }
 }
