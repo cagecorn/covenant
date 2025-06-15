@@ -80,6 +80,7 @@ class StatusEffectManager {
         });
     }
 }
+const statusEffectManager = new StatusEffectManager();
 
 const AI_STRATEGIES = {
     aggressive: (unit, enemies) => { const target = unit.findBestTarget(enemies); if (target) { unit.moveTowards(target); if(unit.isInRange(target)) unit.attemptSkillOrAttack(target); }},
@@ -120,8 +121,25 @@ class Unit {
         this.isDead = false; this.hasActed = false; this.shield = this.valor * 2; this.maxShield = this.shield;
         this.bonusAttack = 0; this.ai = AI_STRATEGIES[template.ai];
         this.isTaunting = false; this.isStealthed = false;
+        this.statusEffects = {};
     }
-    takeTurn(enemies, allies) { if(this.isDead || this.hasActed) return; this.ai(this, enemies, allies); this.hasActed = true; }
+    hasStatus(name) { return !!this.statusEffects[name]; }
+    addStatus(skill) {
+        statusEffectManager.register(this, this, skill);
+    }
+    removeStatus(statusName) {
+        statusEffectManager.remove(this, statusName);
+    }
+    takeTurn(enemies, allies) {
+        if(this.isDead || this.hasActed) return;
+
+        // 턴 낭비형 상태이상 체크 (이 부분은 유지)
+        if (this.hasStatus('paralysis') || this.hasStatus('sleep')) {
+            logMessage(`... ${this.name}(이)가 행동 불능 상태입니다!`);
+            this.hasActed = true;
+            return;
+        }
+        this.ai(this, enemies, allies); this.hasActed = true; }
     calculateThreat(target) { if (target.isStealthed) return -1; if (target.isTaunting) return Infinity; const distance = this.getDistance(target); return 100 - distance; }
     findBestTarget(enemies) { if (!enemies || enemies.length === 0) return null; let bestTarget = null; let maxThreat = -Infinity; enemies.forEach(enemy => { const threat = this.calculateThreat(enemy); if (threat > maxThreat) { maxThreat = threat; bestTarget = enemy; } }); return maxThreat < 0 ? null : bestTarget; }
     applyPassiveSkills() { this.skills.forEach(key => SKILLS[key]?.type === 'passive' && SKILLS[key].effect(this)); }
