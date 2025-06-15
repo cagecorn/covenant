@@ -1,60 +1,96 @@
 // [데이터 파일]
 // 이 파일은 게임의 모든 정적 데이터(템플릿, 설정값 등)를 보관합니다.
 
+// 파일 경로: js/data.js
+
 export const AI_STRATEGIES = {
+    // 전사: 가장 가까운 적에게 돌진 후 즉시 공격
     aggressive: (unit, enemies, allies) => {
-        if (unit.hasStatus('flee')) { AI_STRATEGIES.flee(unit, enemies); return; }
+        // 도망 상태가 최우선
+        if (unit.hasStatus('flee')) { AI_STRATEGIES.flee(unit, enemies, allies); return; }
+        
         const target = unit.findBestTarget(enemies);
         if (target) {
-            unit.moveTowards(target);
-            if(unit.isInRange(target)) unit.attemptSkillOrAttack(target);
+            unit.moveTowards(target); // 1. 먼저 목표를 향해 이동하고,
+            // 2. 이동이 끝난 그 자리에서 즉시 사거리를 확인하여 공격
+            if (unit.isInRange(target)) {
+                unit.attemptSkillOrAttack(target);
+            }
         }
     },
+    // 궁수/마법사: 거리를 유지하며 공격
     kiting: (unit, enemies, allies) => {
-        if (unit.hasStatus('flee')) { AI_STRATEGIES.flee(unit, enemies); return; }
+        if (unit.hasStatus('flee')) { AI_STRATEGIES.flee(unit, enemies, allies); return; }
+
         const target = unit.findBestTarget(enemies);
         if (target) {
             const distance = unit.getDistance(target);
-            const safeDistance = unit.range - 1;
-            if (distance < safeDistance) unit.moveAwayFrom(target);
-            else if (distance > unit.range) unit.moveTowards(target, true);
-            if(unit.isInRange(target)) unit.attemptSkillOrAttack(target);
+            const safeDistance = unit.range > 1 ? unit.range - 1 : 1; // 근접 카이팅 방지
+
+            // 1. 먼저 위치 선정
+            if (distance < safeDistance) { // 너무 가까우면 뒤로 이동
+                unit.moveAwayFrom(target);
+            } else if (distance > unit.range) { // 너무 멀면 접근
+                unit.moveTowards(target, true); // 사거리까지만 접근
+            }
+
+            // 2. 위치 선정이 끝난 후, 사거리 내에 있다면 공격
+            if (unit.isInRange(target)) {
+                unit.attemptSkillOrAttack(target);
+            }
         }
     },
+    // 기마병: 후방 유닛 우선 공격
     assassin: (unit, enemies, allies) => {
-        if (unit.hasStatus('flee')) { AI_STRATEGIES.flee(unit, enemies); return; }
+        if (unit.hasStatus('flee')) { AI_STRATEGIES.flee(unit, enemies, allies); return; }
+
         const priorityClasses = ['Archer', 'Mage', 'Healer'];
         let priorityTargets = enemies.filter(e => priorityClasses.includes(e.classType));
         let target = unit.findBestTarget(priorityTargets);
-        if (!target) target = unit.findBestTarget(enemies);
+        
+        if (!target) {
+            target = unit.findBestTarget(enemies);
+        }
+
         if (target) {
-            unit.moveTowards(target);
-            if(unit.isInRange(target)) unit.attemptSkillOrAttack(target);
+            unit.moveTowards(target); // 1. 목표를 향해 이동
+            if (unit.isInRange(target)) { // 2. 이동 후 공격
+                unit.attemptSkillOrAttack(target);
+            }
         }
     },
+    // 힐러: 상태이상 해제 > 치유 > 공격
     support: (unit, enemies, allies) => {
         const allAllies = allies.concat(unit);
+
+        // 우선순위 1: 상태이상 해제
         const criticalDebuffTarget = allAllies.find(a => a.hasStatus('paralysis') || a.hasStatus('confusion'));
         if (criticalDebuffTarget && unit.hasSkill('cleanse')) {
             unit.moveTowards(criticalDebuffTarget, true);
             if (unit.isInRange(criticalDebuffTarget)) {
                 unit.useSkill('cleanse', criticalDebuffTarget);
-                return;
+                return; // 행동 종료
             }
         }
+
+        // 우선순위 2: 체력 회복
         const healTarget = allAllies.filter(a => !a.isDead && a.hp < a.maxHp).sort((a, b) => (a.hp / a.maxHp) - (b.hp / b.maxHp))[0];
         if (healTarget && unit.hasSkill('heal')) {
             unit.moveTowards(healTarget, true);
             if (unit.isInRange(healTarget)) {
                 unit.useSkill('heal', healTarget);
-                return;
+                return; // 행동 종료
             }
         }
+
+        // 우선순위 3: 할일 없으면 카이팅 공격
         AI_STRATEGIES.kiting(unit, enemies, allies);
     },
+    // 도망
     flee: (unit, enemies, allies) => {
         const target = unit.findClosestEnemy(enemies);
         if (target) {
+            logManager.add(`🏃 ${unit.name}(이)가 공포에 질려 도망칩니다!`);
             unit.moveAwayFrom(target);
         }
     }
