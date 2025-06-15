@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>12vs12 배틀 그리드</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            color: white;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .game-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding: 10px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+        }
+        
+        .team-info {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .current-turn {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .battle-grid {
+            display: grid;
+            grid-template-columns: repeat(15, 50px);
+            grid-template-rows: repeat(10, 50px);
+            gap: 2px;
+            justify-content: center;
+            margin: 20px auto;
+            padding: 20px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 15px;
+            border: 3px solid #3498db;
+        }
+        
+        .grid-cell {
+            width: 50px;
+            height: 50px;
+            border: 1px solid #34495e;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 24px;
+            background: #2c3e50;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+        }
+        
+        .grid-cell:hover {
+            background: #3498db;
+            transform: scale(1.1);
+        }
+        
+        .blue-team {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            border: 2px solid #2980b9;
+        }
+        
+        .red-team {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            border: 2px solid #c0392b;
+        }
+        
+        .selected {
+            box-shadow: 0 0 20px #f1c40f;
+            border: 3px solid #f1c40f;
+        }
+        
+        .possible-move {
+            background: rgba(46, 204, 113, 0.7) !important;
+            border: 2px solid #27ae60;
+        }
+        
+        .possible-attack {
+            background: rgba(231, 76, 60, 0.7) !important;
+            border: 2px solid #c0392b;
+        }
+        
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+        
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .end-turn {
+            background: #27ae60;
+            color: white;
+        }
+        
+        .end-turn:hover {
+            background: #2ecc71;
+            transform: translateY(-2px);
+        }
+        
+        .reset {
+            background: #e67e22;
+            color: white;
+        }
+        
+        .reset:hover {
+            background: #f39c12;
+            transform: translateY(-2px);
+        }
+        
+        .unit-info {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+            min-height: 60px;
+        }
+        
+        .game-over {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.9);
+            padding: 30px;
+            border-radius: 15px;
+            border: 3px solid #f1c40f;
+            z-index: 1000;
+            text-align: center;
+        }
+        
+        @media (max-width: 768px) {
+            .battle-grid {
+                grid-template-columns: repeat(15, 35px);
+                grid-template-rows: repeat(10, 35px);
+                gap: 1px;
+            }
+            
+            .grid-cell {
+                width: 35px;
+                height: 35px;
+                font-size: 18px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>⚔️ 12vs12 전략 배틀 ⚔️</h1>
+        
+        <div class="game-info">
+            <div class="team-info">
+                <div style="color: #3498db;">🛡️ 파란팀: <span id="blueCount">12</span>명</div>
+            </div>
+            <div class="current-turn" id="currentTurn">🔵 파란팀 턴</div>
+            <div class="team-info">
+                <div style="color: #e74c3c;">⚔️ 빨간팀: <span id="redCount">12</span>명</div>
+            </div>
+        </div>
+        
+        <div class="battle-grid" id="battleGrid"></div>
+        
+        <div class="controls">
+            <button class="end-turn" onclick="endTurn()">턴 종료</button>
+            <button class="reset" onclick="resetGame()">게임 리셋</button>
+        </div>
+        
+        <div class="unit-info" id="unitInfo">
+            💡 유닛을 클릭해서 선택하고, 초록색 영역으로 이동하거나 빨간색 영역의 적을 공격하세요!
+        </div>
+    </div>
+
+    <script>
+        // 게임 상태 변수들
+        let currentTeam = 'blue'; // 현재 턴인 팀
+        let selectedUnit = null; // 선택된 유닛
+        let gameBoard = []; // 게임 보드 상태
+        let unitsData = {}; // 각 유닛의 상세 정보
+        
+        // 팀별 유닛 이모지 (다양한 종류)
+        const blueUnits = ['🛡️', '⚔️', '🏹', '🔮', '🐎', '🦅', '🐻', '🦁', '🐺', '🦉', '🐲', '⚡'];
+        const redUnits = ['💀', '👹', '🔥', '⚡', '🦇', '🕷️', '🐍', '🦂', '👾', '👺', '🔴', '💥'];
+        
+        // 게임 초기화
+        function initGame() {
+            const grid = document.getElementById('battleGrid');
+            grid.innerHTML = '';
+            gameBoard = [];
+            unitsData = {};
+            
+            // 15x10 그리드 생성
+            for (let row = 0; row < 10; row++) {
+                gameBoard[row] = [];
+                for (let col = 0; col < 15; col++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'grid-cell';
+                    cell.dataset.row = row;
+                    cell.dataset.col = col;
+                    cell.onclick = () => handleCellClick(row, col);
+                    
+                    gameBoard[row][col] = null;
+                    
+                    // 파란팀 배치 (왼쪽 2열)
+                    if (col < 2) {
+                        const unitIndex = row * 2 + col;
+                        if (unitIndex < 12) {
+                            const unitEmoji = blueUnits[unitIndex];
+                            cell.textContent = unitEmoji;
+                            cell.classList.add('blue-team');
+                            gameBoard[row][col] = { team: 'blue', emoji: unitEmoji, hp: 100, moved: false };
+                            unitsData[`${row}-${col}`] = {
+                                name: getUnitName(unitEmoji, 'blue'),
+                                hp: 100,
+                                attack: 20,
+                                defense: 15
+                            };
+                        }
+                    }
+                    
+                    // 빨간팀 배치 (오른쪽 2열)
+                    if (col >= 13) {
+                        const unitIndex = row * 2 + (col - 13);
+                        if (unitIndex < 12) {
+                            const unitEmoji = redUnits[unitIndex];
+                            cell.textContent = unitEmoji;
+                            cell.classList.add('red-team');
+                            gameBoard[row][col] = { team: 'red', emoji: unitEmoji, hp: 100, moved: false };
+                            unitsData[`${row}-${col}`] = {
+                                name: getUnitName(unitEmoji, 'red'),
+                                hp: 100,
+                                attack: 20,
+                                defense: 15
+                            };
+                        }
+                    }
+                    
+                    grid.appendChild(cell);
+                }
+            }
+            
+            currentTeam = 'blue';
+            selectedUnit = null;
+            updateDisplay();
+        }
+        
+        // 유닛 이름 생성
+        function getUnitName(emoji, team) {
+            const names = {
+                '🛡️': '방패병', '⚔️': '검사', '🏹': '궁수', '🔮': '마법사',
+                '🐎': '기사', '🦅': '독수리', '🐻': '곰전사', '🦁': '사자왕',
+                '🐺': '늑대', '🦉': '올빼미', '🐲': '드래곤', '⚡': '번개술사',
+                '💀': '해골병', '👹': '오크', '🔥': '화염마법사', '🦇': '박쥐',
+                '🕷️': '거미', '🐍': '독사', '🦂': '전갈', '👾': '몬스터',
+                '👺': '도깨비', '🔴': '붉은전사', '💥': '폭발마법사'
+            };
+            return names[emoji] || '알 수 없는 유닛';
+        }
+        
+        // 셀 클릭 처리
+        function handleCellClick(row, col) {
+            const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+            const unit = gameBoard[row][col];
+            
+            // 가능한 이동/공격 위치 클릭한 경우
+            if (cell.classList.contains('possible-move')) {
+                moveUnit(selectedUnit.row, selectedUnit.col, row, col);
+                return;
+            }
+            
+            if (cell.classList.contains('possible-attack')) {
+                attackUnit(selectedUnit.row, selectedUnit.col, row, col);
+                return;
+            }
+            
+            // 유닛 선택
+            if (unit && unit.team === currentTeam && !unit.moved) {
+                selectUnit(row, col);
+            } else {
+                clearSelection();
+            }
+        }
+        
+        // 유닛 선택
+        function selectUnit(row, col) {
+            clearHighlights();
+            selectedUnit = { row, col };
+            
+            const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+            cell.classList.add('selected');
+            
+            showPossibleMoves(row, col);
+            showUnitInfo(row, col);
+        }
+        
+        // 가능한 이동 위치 표시
+        function showPossibleMoves(row, col) {
+            for (let r = Math.max(0, row - 2); r <= Math.min(9, row + 2); r++) {
+                for (let c = Math.max(0, col - 2); c <= Math.min(14, col + 2); c++) {
+                    if (r === row && c === col) continue;
+                    
+                    const distance = Math.abs(r - row) + Math.abs(c - col);
+                    if (distance <= 3) {
+                        const cell = document.querySelector(`[data-row="${r}"][data-col="${c}"]`);
+                        const targetUnit = gameBoard[r][c];
+                        
+                        if (!targetUnit) {
+                            cell.classList.add('possible-move');
+                        } else if (targetUnit.team !== currentTeam) {
+                            cell.classList.add('possible-attack');
+                        }
+                    }
+                }
+            }
+        }
+        
+        // 유닛 이동
+        function moveUnit(fromRow, fromCol, toRow, toCol) {
+            const unit = gameBoard[fromRow][fromCol];
+            const fromCell = document.querySelector(`[data-row="${fromRow}"][data-col="${fromCol}"]`);
+            const toCell = document.querySelector(`[data-row="${toRow}"][data-col="${toCol}"]`);
+            
+            // 보드 상태 업데이트
+            gameBoard[toRow][toCol] = unit;
+            gameBoard[fromRow][fromCol] = null;
+            unit.moved = true;
+            
+            // 유닛 데이터 이동
+            unitsData[`${toRow}-${toCol}`] = unitsData[`${fromRow}-${fromCol}`];
+            delete unitsData[`${fromRow}-${fromCol}`];
+            
+            // 화면 업데이트
+            toCell.textContent = unit.emoji;
+            toCell.className = `grid-cell ${unit.team}-team`;
+            fromCell.textContent = '';
+            fromCell.className = 'grid-cell';
+            
+            clearSelection();
+            updateUnitInfo(`${unit.emoji} ${unitsData[`${toRow}-${toCol}`].name}이(가) 이동했습니다!`);
+        }
+        
+        // 유닛 공격
+        function attackUnit(attackerRow, attackerCol, targetRow, targetCol) {
+            const attacker = gameBoard[attackerRow][attackerCol];
+            const target = gameBoard[targetRow][targetCol];
+            const attackerData = unitsData[`${attackerRow}-${attackerCol}`];
+            const targetData = unitsData[`${targetRow}-${targetCol}`];
+            
+            // 데미지 계산
+            const damage = Math.max(5, attackerData.attack - targetData.defense + Math.random() * 10);
+            targetData.hp -= Math.floor(damage);
+            
+            attacker.moved = true;
+            
+            if (targetData.hp <= 0) {
+                // 유닛 제거
+                const targetCell = document.querySelector(`[data-row="${targetRow}"][data-col="${targetCol}"]`);
+                targetCell.textContent = '';
+                targetCell.className = 'grid-cell';
+                gameBoard[targetRow][targetCol] = null;
+                delete unitsData[`${targetRow}-${targetCol}`];
+                
+                updateUnitInfo(`💥 ${attackerData.name}이(가) ${getUnitName(target.emoji)}을(를) 처치했습니다!`);
+            } else {
+                updateUnitInfo(`⚔️ ${attackerData.name}이(가) ${targetData.name}에게 ${Math.floor(damage)} 데미지! (HP: ${targetData.hp})`);
+            }
+            
+            clearSelection();
+            updateDisplay();
+            checkGameOver();
+        }
+        
+        // 선택 해제 및 하이라이트 제거
+        function clearSelection() {
+            selectedUnit = null;
+            clearHighlights();
+        }
+        
+        function clearHighlights() {
+            document.querySelectorAll('.grid-cell').forEach(cell => {
+                cell.classList.remove('selected', 'possible-move', 'possible-attack');
+            });
+        }
+        
+        // 유닛 정보 표시
+        function showUnitInfo(row, col) {
+            const unit = gameBoard[row][col];
+            const unitData = unitsData[`${row}-${col}`];
+            updateUnitInfo(`${unit.emoji} ${unitData.name} | HP: ${unitData.hp} | 공격: ${unitData.attack} | 방어: ${unitData.defense}`);
+        }
+        
+        function updateUnitInfo(text) {
+            document.getElementById('unitInfo').textContent = text;
+        }
+        
+        // 턴 종료
+        function endTurn() {
+            // 모든 유닛의 이동 상태 초기화
+            for (let row = 0; row < 10; row++) {
+                for (let col = 0; col < 15; col++) {
+                    if (gameBoard[row][col] && gameBoard[row][col].team === currentTeam) {
+                        gameBoard[row][col].moved = false;
+                    }
+                }
+            }
+            
+            currentTeam = currentTeam === 'blue' ? 'red' : 'blue';
+            clearSelection();
+            updateDisplay();
+            updateUnitInfo(`${currentTeam === 'blue' ? '🔵 파란팀' : '🔴 빨간팀'}의 턴입니다!`);
+        }
+        
+        // 화면 업데이트
+        function updateDisplay() {
+            const blueCount = Object.keys(unitsData).filter(key => {
+                const [row, col] = key.split('-');
+                return gameBoard[row][col] && gameBoard[row][col].team === 'blue';
+            }).length;
+            
+            const redCount = Object.keys(unitsData).filter(key => {
+                const [row, col] = key.split('-');
+                return gameBoard[row][col] && gameBoard[row][col].team === 'red';
+            }).length;
+            
+            document.getElementById('blueCount').textContent = blueCount;
+            document.getElementById('redCount').textContent = redCount;
+            document.getElementById('currentTurn').textContent = currentTeam === 'blue' ? '🔵 파란팀 턴' : '🔴 빨간팀 턴';
+        }
+        
+        // 게임 종료 확인
+        function checkGameOver() {
+            const blueCount = Object.keys(unitsData).filter(key => {
+                const [row, col] = key.split('-');
+                return gameBoard[row][col] && gameBoard[row][col].team === 'blue';
+            }).length;
+            
+            const redCount = Object.keys(unitsData).filter(key => {
+                const [row, col] = key.split('-');
+                return gameBoard[row][col] && gameBoard[row][col].team === 'red';
+            }).length;
+            
+            if (blueCount === 0) {
+                showGameOver('🔴 빨간팀 승리!');
+            } else if (redCount === 0) {
+                showGameOver('🔵 파란팀 승리!');
+            }
+        }
+        
+        function showGameOver(message) {
+            const gameOverDiv = document.createElement('div');
+            gameOverDiv.className = 'game-over';
+            gameOverDiv.innerHTML = `
+                <h2>${message}</h2>
+                <button onclick="resetGame(); this.parentElement.remove();" style="margin-top: 15px; padding: 10px 20px; background: #27ae60; color: white; border: none; border-radius: 5px; cursor: pointer;">새 게임</button>
+            `;
+            document.body.appendChild(gameOverDiv);
+        }
+        
+        // 게임 리셋
+        function resetGame() {
+            const gameOverElement = document.querySelector('.game-over');
+            if (gameOverElement) {
+                gameOverElement.remove();
+            }
+            initGame();
+            updateUnitInfo('💡 유닛을 클릭해서 선택하고, 초록색 영역으로 이동하거나 빨간색 영역의 적을 공격하세요!');
+        }
+        
+        // 게임 시작
+        initGame();
+    </script>
+</body>
+</html>
