@@ -205,7 +205,9 @@ class Unit {
         this.team = team; this.x = x; this.y = y; this.maxHp = this.hp; this.skills = template.skills || [];
         Object.assign(this, CLASS_STATS[this.classType]);
         this.isDead = false; this.hasActed = false; this.shield = this.valor * 2; this.maxShield = this.shield;
-        this.bonusAttack = 0; this.contextualBonus = { attack: 0 };
+        this.bonusAttack = 0;
+        this.elementalType = template.elementalType || 'none';
+        this.contextualBonus = { attack: 0, defense: 0, hp: 0 };
         this.ai = AI_STRATEGIES[template.ai];
         this.isTaunting = false; this.isStealthed = false;
         this.statusEffects = {};
@@ -239,8 +241,9 @@ class Unit {
     findBestTarget(enemies) { if (!enemies || enemies.length === 0) return null; let bestTarget = null; let maxThreat = -Infinity; enemies.forEach(enemy => { const threat = this.calculateThreat(enemy); if (threat > maxThreat) { maxThreat = threat; bestTarget = enemy; } }); return maxThreat < 0 ? null : bestTarget; }
     applyPassiveSkills() { this.skills.forEach(key => SKILLS[key]?.type === 'passive' && SKILLS[key].effect(this)); }
     getAttackPower() {
-        const contextBonus = this.contextualBonus ? this.contextualBonus.attack : 0;
-        return Math.floor((this.attackPower + this.bonusAttack + contextBonus) * (1 + (this.shield / this.maxShield) * 0.5));
+        const base = this.attackPower + this.bonusAttack + this.contextualBonus.attack;
+        const valorBonus = 1 + (this.shield / this.maxShield) * 0.5;
+        return Math.floor(base * valorBonus);
     }
     takeDamage(damage) {
         const shieldDmg = Math.min(this.shield, damage);
