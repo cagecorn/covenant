@@ -2,254 +2,194 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>Covenant - 6v6 Auto Battle Simulation (v0.4 Advanced Logic)</title>
+    <title>Covenant - 6v6 Auto Battle Simulation (v0.6 Extensible AI)</title>
     <style>
-        /* CSS는 이전 버전(v0.3)과 동일합니다 */
+        /* CSS는 이전 버전(v0.5)과 동일합니다 */
         body{background-color:#2c3e50;color:white;font-family:sans-serif;display:flex;flex-direction:column;align-items:center;margin:0;padding:20px}h1{text-shadow:2px 2px 4px rgba(0,0,0,.5)}canvas{background-color:#34495e;border:3px solid #7f8c8d;border-radius:10px}#controls{margin-top:15px}button{padding:10px 20px;font-size:16px;border:none;border-radius:8px;cursor:pointer;background:#27ae60;color:white;transition:all .3s ease}button:hover{background:#2ecc71}#log{width:750px;height:100px;background:rgba(0,0,0,.3);border-radius:5px;margin-top:15px;padding:10px;overflow-y:scroll;font-size:14px;border:1px solid #7f8c8d;line-height:1.5}
     </style>
 </head>
 <body>
-
-    <h1>Covenant - 6vs6 자동 전투 시뮬레이션 (v0.4 개선된 로직)</h1>
+    <h1>Covenant - 6vs6 자동 전투 시뮬레이션 (v0.6 확장형 AI)</h1>
     <canvas id="gameCanvas" width="750" height="500"></canvas>
-    <div id="controls">
-        <button id="startBtn">시뮬레이션 시작</button>
-    </div>
+    <div id="controls"><button id="startBtn">시뮬레이션 시작</button></div>
     <div id="log"></div>
 
 <script>
 // =======================================================================
-// 1. 기본 설정 (v0.3과 유사)
+// 1. 기본 설정 및 데이터 정의
 // =======================================================================
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
-const startBtn = document.getElementById('startBtn');
-const logElement = document.getElementById('log');
-
-const GRID_COLS = 15;
-const GRID_ROWS = 10;
-const CELL_SIZE = 50;
-
+const canvas = document.getElementById('gameCanvas'), ctx = canvas.getContext('2d');
+const startBtn = document.getElementById('startBtn'), logElement = document.getElementById('log');
+const GRID_COLS = 15, GRID_ROWS = 10, CELL_SIZE = 50;
 const backgroundCanvas = document.createElement('canvas');
 backgroundCanvas.width = canvas.width;
 backgroundCanvas.height = canvas.height;
 const backgroundCtx = backgroundCanvas.getContext('2d');
 
-
-// =======================================================================
-// 2. 게임 데이터 구조 정의
-// =======================================================================
-
-// [추가 최적화] 데이터 중심 설계: 유닛 템플릿
-const UNIT_TEMPLATES = {
-    player_warrior: { name: '강한 전사', classType: 'Warrior', hp: 100, attackPower: 20, valor: 20, weight: 50, skills: ['powerStrike', 'stoneSkin'] },
-    player_knight:  { name: '방어형 기사', classType: 'Cavalry', hp: 120, attackPower: 15, valor: 30, weight: 60, skills: ['stoneSkin'] },
-    player_archer:  { name: '명사수', classType: 'Archer',  hp: 60, attackPower: 25, valor: 5, weight: 30, skills: ['powerStrike'] },
-    player_healer:  { name: '치유사', classType: 'Healer',  hp: 70, attackPower: 10, valor: 15, weight: 25, skills: ['heal'] },
-
-    enemy_orc_chief: { name: '오크 대장', classType: 'Warrior', hp: 110, attackPower: 22, valor: 20, weight: 55, skills: ['powerStrike'] },
-    enemy_shaman:    { name: '오크 주술사', classType: 'Mage', hp: 60, attackPower: 28, valor: 15, weight: 38, skills: ['heal'] },
-    enemy_goblin:    { name: '고블린 정찰병', classType: 'Archer', hp: 50, attackPower: 20, valor: 5, weight: 20 },
-    enemy_troll:     { name: '트롤', classType: 'Warrior', hp: 150, attackPower: 18, valor: 10, weight: 80, skills: ['stoneSkin'] },
-};
-
-const SKILLS = {
-    powerStrike: { name: '파워 스트라이크', type: 'active', probability: 0.4,
-        effect: (caster, target) => {
-            const damage = Math.floor(caster.getAttackPower() * 1.5);
-            logMessage(`💥 ${caster.name}(이)가 스킬 [${SKILLS.powerStrike.name}](으)로 ${target.name}에게 ${damage}의 강력한 피해!`);
-            target.takeDamage(damage);
+const AI_STRATEGIES = {
+    aggressive: (unit, enemies) => {
+        const target = unit.findBestTarget(enemies);
+        if (target) {
+            unit.moveTowards(target);
+            if(unit.isInRange(target)) unit.attemptSkillOrAttack(target);
         }
     },
-    heal: { name: '치유', type: 'active', probability: 0.5,
-        effect: (caster) => {
-            const healAmount = Math.floor(caster.maxHp * 0.3);
-            caster.hp = Math.min(caster.maxHp, caster.hp + healAmount);
-            logMessage(`💖 ${caster.name}(이)가 스킬 [${SKILLS.heal.name}](으)로 체력을 ${healAmount} 회복!`);
+    kiting: (unit, enemies) => {
+        const target = unit.findBestTarget(enemies);
+        if (target) {
+            const distance = unit.getDistance(target);
+            const safeDistance = unit.range - 1;
+            if (distance < safeDistance) unit.moveAwayFrom(target);
+            else if (distance > unit.range) unit.moveTowards(target, true);
+            if(unit.isInRange(target)) unit.attemptSkillOrAttack(target);
         }
     },
-    stoneSkin: { name: '스톤 스킨', type: 'passive',
-        effect: (caster) => {
-            const defenseBonus = Math.floor(caster.valor * 0.5);
-            caster.shield += defenseBonus;
-            caster.maxShield += defenseBonus;
-            logMessage(`🛡️ ${caster.name}(이)가 패시브 [${SKILLS.stoneSkin.name}] 효과로 보호막이 ${defenseBonus} 증가!`);
+    assassin: (unit, enemies) => {
+        const priorityClasses = ['Archer', 'Mage', 'Healer'];
+        let priorityTargets = enemies.filter(e => priorityClasses.includes(e.classType));
+        let target = unit.findBestTarget(priorityTargets);
+        if (!target) target = unit.findBestTarget(enemies);
+        if (target) {
+            unit.moveTowards(target);
+            if(unit.isInRange(target)) unit.attemptSkillOrAttack(target);
         }
     },
-     berserk: { name: '버서커 모드', type: 'passive',
-        effect: (caster) => {
-            // [추가 최적화] 스탯을 직접 바꾸는 대신 보너스 값으로 저장
-            caster.bonusAttack += 10;
-            logMessage(`🔥 ${caster.name}(이)가 패시브 [${SKILLS.berserk.name}] 효과로 공격력이 10 증가!`);
+    support: (unit, enemies, allies) => {
+        const healTarget = allies.concat(unit)
+                             .filter(a => !a.isDead && a.hp < a.maxHp)
+                             .sort((a,b) => (a.hp/a.maxHp) - (b.hp/b.maxHp))[0];
+        if (healTarget) {
+            unit.moveTowards(healTarget, true);
+            if (unit.isInRange(healTarget)) {
+                const healSkill = unit.skills.map(s => SKILLS[s]).find(s => s.name === '치유');
+                if(healSkill && Math.random() < healSkill.probability) {
+                    healSkill.effect(unit, healTarget);
+                    return; // 힐 사용 후 턴 종료
+                }
+            }
         }
+        // 힐 대상이 없으면 적 공격
+        AI_STRATEGIES.kiting(unit, enemies);
     }
 };
 
-const CLASS_STATS = {
-    Warrior:  { range: 1, moveSpeed: 3, icon: '⚔️' }, Archer:   { range: 4, moveSpeed: 3, icon: '🏹' },
-    Cavalry:  { range: 2, moveSpeed: 5, icon: '🐎' }, Mage:     { range: 3, moveSpeed: 2, icon: '🔮' },
-    Healer:   { range: 3, moveSpeed: 2, icon: '💖' }
+const UNIT_TEMPLATES = {
+    player_warrior: { name: '전사', classType: 'Warrior', ai: 'aggressive', hp: 120, attackPower: 20, valor: 20, weight: 50, skills: ['powerStrike', 'stoneSkin'] },
+    player_cavalry: { name: '기마병', classType: 'Cavalry', ai: 'assassin', hp: 100, attackPower: 22, valor: 15, weight: 40, skills:['powerStrike'] },
+    player_archer:  { name: '궁수', classType: 'Archer',  ai: 'kiting', hp: 70, attackPower: 25, valor: 5, weight: 30 },
+    player_healer:  { name: '힐러', classType: 'Healer',  ai: 'support', hp: 80, attackPower: 10, valor: 10, weight: 25, skills: ['heal'] },
+    enemy_warrior: { name: '오크 전사', classType: 'Warrior', ai: 'aggressive', hp: 120, attackPower: 20, valor: 20, weight: 55, skills: ['powerStrike'] },
+    enemy_cavalry: { name: '와르그', classType: 'Cavalry', ai: 'assassin', hp: 100, attackPower: 22, valor: 15, weight: 45 },
+    enemy_mage:    { name: '고블린 마법사', classType: 'Mage', ai: 'kiting', hp: 60, attackPower: 30, valor: 10, weight: 35 },
+    enemy_healer:  { name: '오크 주술사', classType: 'Healer', ai: 'support', hp: 80, attackPower: 10, valor: 10, weight: 28, skills: ['heal'] },
 };
-
-let unitCounter = 0;
+const SKILLS = {
+    powerStrike: { name: '파워 스트라이크', type: 'active', probability: 0.4, effect: (caster, target) => {
+        const damage = Math.floor(caster.getAttackPower() * 1.5);
+        logMessage(`💥 ${caster.name}의 [${SKILLS.powerStrike.name}]! ${target.name}에게 ${damage} 피해!`);
+        target.takeDamage(damage);
+    }},
+    heal: { name: '치유', type: 'active', probability: 0.6, effect: (caster, target) => {
+        const healAmount = Math.floor(caster.attackPower * 2.5);
+        target.hp = Math.min(target.maxHp, target.hp + healAmount);
+        logMessage(`💖 ${caster.name}의 [${SKILLS.heal.name}]! ${target.name}의 체력 ${healAmount} 회복!`);
+    }},
+    stoneSkin: { name: '스톤 스킨', type: 'passive', effect: (caster) => {
+        caster.shield += 20; caster.maxShield += 20;
+        logMessage(`🛡️ ${caster.name} [${SKILLS.stoneSkin.name}] 발동! 보호막 20 증가!`);
+    }}
+};
+const CLASS_STATS = {
+    Warrior:  { range: 1, moveSpeed: 3, icon: '⚔️' }, Cavalry:  { range: 2, moveSpeed: 5, icon: '🐎' },
+    Archer:   { range: 4, moveSpeed: 3, icon: '🏹' }, Mage:     { range: 3, moveSpeed: 2, icon: '🔮' },
+    Healer:   { range: 3, moveSpeed: 3, icon: '💖' }
+};
 
 class Unit {
     constructor(template, team, x, y) {
-        Object.assign(this, template); // 템플릿의 모든 속성을 복사
-        this.id = unitCounter++;
-        this.team = team;
-        this.x = x;
-        this.y = y;
-        this.maxHp = this.hp;
-        this.skills = template.skills || [];
-
-        const stats = CLASS_STATS[this.classType];
-        Object.assign(this, stats);
+        Object.assign(this, template);
+        this.id = (Math.random() + 1).toString(36).substring(7);
+        this.team = team; this.x = x; this.y = y;
+        this.maxHp = this.hp; this.skills = template.skills || [];
+        Object.assign(this, CLASS_STATS[this.classType]);
         
-        this.isDead = false;
-        this.hasActed = false;
-        this.shield = this.valor * 2;
-        this.maxShield = this.shield;
-
-        // [추가 최적화] 계산된 스탯을 저장할 속성
+        this.isDead = false; this.hasActed = false;
+        this.shield = this.valor * 2; this.maxShield = this.shield;
         this.bonusAttack = 0;
-    }
+        this.ai = AI_STRATEGIES[template.ai];
 
-    applyPassiveSkills() {
-        this.skills.forEach(skillKey => {
-            const skill = SKILLS[skillKey];
-            if (skill && skill.type === 'passive') {
-                skill.effect(this);
-            }
-        });
-    }
-
-    // [추가 최적화] 최종 공격력을 실시간으로 계산하는 함수
-    getAttackPower() {
-        const valorBonus = (this.shield / this.maxShield) * 0.5;
-        // 기본공격력 + 패시브 보너스 + 용맹 보너스
-        return Math.floor((this.attackPower + this.bonusAttack) * (1 + valorBonus));
-    }
-
-    takeDamage(damage) {
-        if (this.shield > 0) {
-            const shieldDamage = Math.min(this.shield, damage);
-            this.shield -= shieldDamage;
-            damage -= shieldDamage;
-        }
-        if (damage > 0) this.hp -= damage;
-        if (this.hp <= 0) {
-            this.hp = 0;
-            this.isDead = true;
-            logMessage(`${this.team === 'player' ? '아군' : '적'} ${this.name}(이)가 쓰러졌습니다!`);
-        }
+        // [미래 확장성] 도발, 은신 상태를 위한 속성 (구멍 파기)
+        this.isTaunting = false;
+        this.isStealthed = false;
     }
     
-    // [로직 수정] "이동 후 행동" AI
-    takeTurn(enemies) {
-        if (this.isDead || this.hasActed) return;
-        
-        // --- 1. 이동 단계 ---
-        const closestEnemy = this.findClosestEnemy(enemies);
-        if (closestEnemy) {
-            this.moveTowards(closestEnemy);
-        }
-
-        // --- 2. 행동(스킬/공격) 단계 ---
-        // 이동 후, 다시 가장 가까운 적을 기준으로 판단
-        const target = this.findClosestEnemy(enemies);
-        if (target && this.isInRange(target)) {
-            let didUseSkill = false;
-            // 액티브 스킬 사용 시도
-            for (const skillKey of this.skills) {
-                const skill = SKILLS[skillKey];
-                if (skill && skill.type === 'active' && Math.random() < skill.probability) {
-                    if (skill.name === '치유') {
-                        // 힐은 자신에게만 사용 (체력이 70% 미만일 때)
-                        if (this.hp < this.maxHp * 0.7) {
-                           skill.effect(this);
-                           didUseSkill = true;
-                        }
-                    } else {
-                        skill.effect(this, target);
-                        didUseSkill = true;
-                    }
-                    if(didUseSkill) break;
-                }
-            }
-            // 스킬을 사용하지 않았다면 일반 공격
-            if (!didUseSkill) {
-                this.attack(target);
-            }
-        } else {
-            logMessage(`${this.name}(이)가 주변에 공격할 대상이 없어 대기합니다.`);
-        }
-        
+    takeTurn(enemies, allies) {
+        if(this.isDead || this.hasActed) return;
+        this.ai(this, enemies, allies);
         this.hasActed = true;
     }
-    
-    findClosestEnemy(enemies) {
-        if (!enemies || enemies.length === 0) return null;
-        return enemies.reduce((closest, current) => {
-            const closestDist = Math.abs(this.x - closest.x) + Math.abs(this.y - closest.y);
-            const currentDist = Math.abs(this.x - current.x) + Math.abs(this.y - current.y);
-            return currentDist < closestDist ? current : closest;
-        });
-    }
 
-    isInRange(target) {
-        return (Math.abs(this.x - target.x) + Math.abs(this.y - target.y)) <= this.range;
-    }
-
-    attack(target) {
-        const finalAttackPower = this.getAttackPower();
-        logMessage(`⚔️ ${this.name}(이)가 ${target.name}에게 일반 공격! (${finalAttackPower} 피해)`);
-        target.takeDamage(finalAttackPower);
-    }
-
-    moveTowards(target) {
-        let bestX = this.x;
-        let bestY = this.y;
-        let minDistance = Math.abs(this.x - target.x) + Math.abs(this.y - target.y);
-
-        // 이동 가능한 모든 위치를 탐색하여 가장 좋은 지점을 찾음
-        for (let i = 0; i <= this.moveSpeed; i++) {
-            for (let j = 0; j <= this.moveSpeed - i; j++) {
-                const checkPositions = [
-                    {x: this.x + i, y: this.y + j}, {x: this.x - i, y: this.y + j},
-                    {x: this.x + i, y: this.y - j}, {x: this.x - i, y: this.y - j}
-                ];
-                for(const pos of checkPositions){
-                    // 맵 경계 체크
-                    if(pos.x < 0 || pos.x >= GRID_COLS || pos.y < 0 || pos.y >= GRID_ROWS) continue;
-
-                    const dist = Math.abs(pos.x - target.x) + Math.abs(pos.y - target.y);
-                    if(dist < minDistance){
-                        minDistance = dist;
-                        bestX = pos.x;
-                        bestY = pos.y;
-                    }
-                }
-            }
+    // [미래 확장성] 타겟의 위협도를 계산하는 함수
+    calculateThreat(target) {
+        // 1. 은신 상태면 위협도 -1 (절대 공격 안함)
+        if (target.isStealthed) {
+            return -1;
         }
+
+        // 2. 도발 상태면 위협도 무한대 (무조건 공격)
+        if (target.isTaunting) {
+            return Infinity;
+        }
+
+        // 3. 기본 위협도는 거리에 반비례 (가까울수록 높음)
+        // 나중에 체력이 낮은 적, 특정 클래스 등 추가 가중치를 여기에 부여할 수 있음
+        const distance = this.getDistance(target);
+        const threat = 100 - distance; // 간단한 위협도 공식
         
-        if (this.x !== bestX || this.y !== bestY) {
-            logMessage(`➡️ ${this.name}(이)가 (${this.x},${this.y})에서 (${bestX},${bestY})로 이동.`);
-            this.x = bestX;
-            this.y = bestY;
-        }
+        return threat;
     }
+
+    // [미래 확장성] '가장 가까운' 대신 '가장 위협적인' 적을 찾도록 변경
+    findBestTarget(enemies) {
+        if (!enemies || enemies.length === 0) return null;
+
+        let bestTarget = null;
+        let maxThreat = -Infinity;
+
+        enemies.forEach(enemy => {
+            const threat = this.calculateThreat(enemy);
+            if (threat > maxThreat) {
+                maxThreat = threat;
+                bestTarget = enemy;
+            }
+        });
+        
+        // 위협도가 0 미만인 대상은 선택하지 않음 (예: 은신)
+        return maxThreat < 0 ? null : bestTarget;
+    }
+    
+    // (이하 다른 메소드들은 v0.5와 거의 동일)
+    applyPassiveSkills() { this.skills.forEach(key => SKILLS[key]?.type === 'passive' && SKILLS[key].effect(this)); }
+    getAttackPower() { return Math.floor((this.attackPower + this.bonusAttack) * (1 + (this.shield / this.maxShield) * 0.5)); }
+    takeDamage(damage) { const shieldDmg = Math.min(this.shield, damage); this.shield -= shieldDmg; this.hp -= (damage - shieldDmg); if (this.hp <= 0) { this.hp = 0; this.isDead = true; logMessage(`💀 ${this.name} 쓰러짐!`); }}
+    getDistance(target) { return Math.abs(this.x - target.x) + Math.abs(this.y - target.y); }
+    isInRange(target) { return this.getDistance(target) <= this.range; }
+    attemptSkillOrAttack(target){ let didUseSkill = false; for (const skillKey of this.skills) { const skill = SKILLS[skillKey]; if (skill?.type === 'active' && skill.name !== '치유' && Math.random() < skill.probability) { skill.effect(this, target); didUseSkill = true; break; } } if (!didUseSkill) this.basicAttack(target); }
+    basicAttack(target) { const damage = this.getAttackPower(); logMessage(`⚔️ ${this.name} → ${target.name} 일반 공격! (${damage} 피해)`); target.takeDamage(damage); }
+    moveTowards(target, untilInRange = false) { let moved = 0; while(moved < this.moveSpeed){ const distance = this.getDistance(target); if (distance === 0 || (untilInRange && distance <= this.range)) break; let moveX = 0, moveY = 0; if (Math.abs(target.x - this.x) > Math.abs(target.y - this.y)) { moveX = Math.sign(target.x - this.x); } else { moveY = Math.sign(target.y - this.y); } this.x += moveX; this.y += moveY; moved++; } }
+    moveAwayFrom(target) { let moved = 0; while(moved < this.moveSpeed){ if (this.getDistance(target) >= this.range) break; let moveX = -Math.sign(target.x - this.x); let moveY = -Math.sign(target.y - this.y); if (this.x + moveX < 0 || this.x + moveX >= GRID_COLS) moveX = 0; if (this.y + moveY < 0 || this.y + moveY >= GRID_ROWS) moveY = 0; if (moveX === 0 && moveY === 0) break; this.x += moveX; this.y += moveY; moved++; } }
 }
 
 // =======================================================================
-// 3. 렌더링 (v0.3과 동일)
+// 3. 렌더링 및 4, 5. 시뮬레이션 실행 (v0.5와 동일, 축약)
 // =======================================================================
-function preRenderGrid(){backgroundCtx.strokeStyle="#7f8c8d",backgroundCtx.lineWidth=1;for(let t=0;t<=GRID_COLS;t++)backgroundCtx.beginPath(),backgroundCtx.moveTo(t*CELL_SIZE,0),backgroundCtx.lineTo(t*CELL_SIZE,GRID_ROWS*CELL_SIZE),backgroundCtx.stroke();for(let t=0;t<=GRID_ROWS;t++)backgroundCtx.beginPath(),backgroundCtx.moveTo(0,t*CELL_SIZE),backgroundCtx.lineTo(GRID_COLS*CELL_SIZE,t*CELL_SIZE),backgroundCtx.stroke()}function drawUnits(t){t.forEach(t=>{if(t.isDead)return;const e=t.x*CELL_SIZE+CELL_SIZE/2,i=t.y*CELL_SIZE+CELL_SIZE/2;ctx.font="24px sans-serif",ctx.textAlign="center",ctx.textBaseline="middle",ctx.fillText(t.icon,e,i),ctx.fillStyle="player"===t.team?"blue":"red",ctx.beginPath(),ctx.arc(e,i+15,5,0,2*Math.PI),ctx.fill();const s= .8*CELL_SIZE,a=t.hp/t.maxHp;if(ctx.fillStyle="#555",ctx.fillRect(e-s/2,i-20,s,5),ctx.fillStyle="green",ctx.fillRect(e-s/2,i-20,s*a,5),t.maxShield>0){const a=t.shield/t.maxShield;ctx.fillStyle="#555",ctx.fillRect(e-s/2,i-26,s,5),ctx.fillStyle="cyan",ctx.fillRect(e-s/2,i-26,s*a,5)}})}function render(t){ctx.clearRect(0,0,canvas.width,canvas.height),ctx.drawImage(backgroundCanvas,0,0),drawUnits(t)}
-
-// =======================================================================
-// 4 & 5. 전투 로직 및 시뮬레이션 실행
-// =======================================================================
-let playerUnits=[],enemyUnits=[],allUnits=[],isSimulationRunning=!1,logBuffer=[];function init(){unitCounter=0,playerUnits=[new Unit(UNIT_TEMPLATES.player_warrior,"player",1,2),new Unit(UNIT_TEMPLATES.player_knight,"player",1,5),new Unit(UNIT_TEMPLATES.player_archer,"player",0,3),new Unit(UNIT_TEMPLATES.player_healer,"player",0,6)],enemyUnits=[new Unit(UNIT_TEMPLATES.enemy_orc_chief,"enemy",13,2),new Unit(UNIT_TEMPLATES.enemy_shaman,"enemy",14,5),new Unit(UNIT_TEMPLATES.enemy_goblin,"enemy",14,3),new Unit(UNIT_TEMPLATES.enemy_troll,"enemy",13,7)],allUnits=[...playerUnits,...enemyUnits],logMessage("--- 전투 시작! 패시브 스킬 발동 ---"),allUnits.forEach(t=>t.applyPassiveSkills()),flushLog(),logElement.innerHTML="",logMessage("전투 준비 완료. 시뮬레이션 시작 버튼을 누르세요."),flushLog();let t=function(){render(allUnits),isSimulationRunning&&requestAnimationFrame(t)};requestAnimationFrame(t)}async function runTurn(){logMessage("--- 새로운 턴 시작 ---");const t=allUnits.filter(t=>!t.isDead).sort((t,e)=>t.weight-e.weight);t.forEach(t=>t.hasActed=!1);for(const e of t){if(e.isDead)continue;const t="player"===e.team?enemyUnits.filter(t=>!t.isDead):playerUnits.filter(t=>!t.isDead);e.takeTurn(t),await sleep(400)}if(flushLog(),0===playerUnits.filter(t=>!t.isDead).length)return logMessage("플레이어 팀 패배!"),isSimulationRunning=!1,startBtn.disabled=!1,void flushLog();if(0===enemyUnits.filter(t=>!t.isDead).length)return logMessage("플레이어 팀 승리!"),isSimulationRunning=!1,startBtn.disabled=!1,void flushLog();isSimulationRunning&&setTimeout(runTurn,1e3)}function sleep(t){return new Promise(e=>setTimeout(e,t))}function logMessage(t){logBuffer.push(t)}function flushLog(){logBuffer.length>0&&(logElement.innerHTML+=logBuffer.join("<br>"),logElement.scrollTop=logElement.scrollHeight,logBuffer=[])}startBtn.addEventListener("click",()=>{isSimulationRunning||(isSimulationRunning=!0,startBtn.disabled=!0,init(),runTurn())}),window.onload=()=>{preRenderGrid(),init(),render(allUnits)};
+function preRenderGrid(){backgroundCtx.strokeStyle="#7f8c8d",backgroundCtx.lineWidth=1;for(let t=0;t<=GRID_COLS;t++)backgroundCtx.beginPath(),backgroundCtx.moveTo(t*CELL_SIZE,0),backgroundCtx.lineTo(t*CELL_SIZE,GRID_ROWS*CELL_SIZE),backgroundCtx.stroke();for(let t=0;t<=GRID_ROWS;t++)backgroundCtx.beginPath(),backgroundCtx.moveTo(0,t*CELL_SIZE),backgroundCtx.lineTo(GRID_COLS*CELL_SIZE,t*CELL_SIZE),backgroundCtx.stroke()}
+function drawUnits(t){t.forEach(t=>{if(t.isDead)return;const e=t.x*CELL_SIZE+CELL_SIZE/2,i=t.y*CELL_SIZE+CELL_SIZE/2;ctx.font="24px sans-serif",ctx.textAlign="center",ctx.textBaseline="middle",ctx.fillText(t.icon,e,i),ctx.fillStyle="player"===t.team?"#3498db":"#e74c3c",ctx.beginPath(),ctx.arc(e,i+15,5,0,2*Math.PI),ctx.fill();const s=.8*CELL_SIZE,a=t.hp/t.maxHp;if(ctx.fillStyle="#555",ctx.fillRect(e-s/2,i-20,s,5),ctx.fillStyle="green",ctx.fillRect(e-s/2,i-20,s*a,5),t.maxShield>0){const a=t.shield/t.maxShield;ctx.fillStyle="#555",ctx.fillRect(e-s/2,i-26,s,5),ctx.fillStyle="cyan",ctx.fillRect(e-s/2,i-26,s*a,5)}})}
+function render(t){ctx.clearRect(0,0,canvas.width,canvas.height),ctx.drawImage(backgroundCanvas,0,0),drawUnits(t)}
+let playerUnits=[],enemyUnits=[],allUnits=[],isSimulationRunning=!1,logBuffer=[];function init(){unitCounter=0,playerUnits=[new Unit(UNIT_TEMPLATES.player_warrior,"player",1,4),new Unit(UNIT_TEMPLATES.player_cavalry,"player",2,2),new Unit(UNIT_TEMPLATES.player_archer,"player",0,1),new Unit(UNIT_TEMPLATES.player_healer,"player",0,7)],enemyUnits=[new Unit(UNIT_TEMPLATES.enemy_warrior,"enemy",13,4),new Unit(UNIT_TEMPLATES.enemy_cavalry,"enemy",12,6),new Unit(UNIT_TEMPLATES.enemy_mage,"enemy",14,1),new Unit(UNIT_TEMPLATES.enemy_healer,"enemy",14,7)],allUnits=[...playerUnits,...enemyUnits],logMessage("--- 전투 시작! 패시브 스킬 발동 ---"),allUnits.forEach(t=>t.applyPassiveSkills()),flushLog(),logElement.innerHTML="",logMessage("전투 준비 완료. 시뮬레이션 시작 버튼을 누르세요."),flushLog();let t=function(){render(allUnits),isSimulationRunning&&requestAnimationFrame(t)};requestAnimationFrame(t)}
+async function runTurn(){logMessage("--- 새로운 턴 시작 ---");const t=allUnits.filter(t=>!t.isDead).sort((t,e)=>t.weight-e.weight);t.forEach(t=>t.hasActed=!1);for(const e of t){if(e.isDead)continue;const i="player"===e.team?enemyUnits.filter(t=>!t.isDead):playerUnits.filter(t=>!t.isDead),s="player"===e.team?playerUnits.filter(t=>!t.isDead):enemyUnits.filter(t=>!t.isDead);e.takeTurn(i,s),await sleep(400)}if(flushLog(),0===playerUnits.filter(t=>!t.isDead).length)return logMessage("패배!"),isSimulationRunning=!1,startBtn.disabled=!1,void flushLog();if(0===enemyUnits.filter(t=>!t.isDead).length)return logMessage("승리!"),isSimulationRunning=!1,startBtn.disabled=!1,void flushLog();isSimulationRunning&&setTimeout(runTurn,1e3)}
+function sleep(t){return new Promise(e=>setTimeout(e,t))}function logMessage(t){logBuffer.push(t)}function flushLog(){logBuffer.length>0&&(logElement.innerHTML+=logBuffer.join("<br>"),logElement.scrollTop=logElement.scrollHeight,logBuffer=[])}
+startBtn.addEventListener("click",()=>{isSimulationRunning||(isSimulationRunning=!0,startBtn.disabled=!0,init(),runTurn())}),window.onload=()=>{preRenderGrid(),init(),render(allUnits)};
 </script>
 </body>
 </html>
