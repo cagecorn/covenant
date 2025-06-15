@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>Covenant - 6v6 Auto Battle Simulation (v0.1)</title>
+    <title>Covenant - 6v6 Auto Battle Simulation (v0.2 Optimized)</title>
     <style>
         body {
             background-color: #2c3e50;
@@ -48,12 +48,13 @@
             overflow-y: scroll;
             font-size: 14px;
             border: 1px solid #7f8c8d;
+            line-height: 1.5;
         }
     </style>
 </head>
 <body>
 
-    <h1>Covenant - 6vs6 자동 전투 시뮬레이션</h1>
+    <h1>Covenant - 6vs6 자동 전투 시뮬레이션 (최적화 버전)</h1>
     <canvas id="gameCanvas" width="750" height="500"></canvas>
     <div id="controls">
         <button id="startBtn">시뮬레이션 시작</button>
@@ -62,7 +63,7 @@
 
 <script>
 // =======================================================================
-// 1단계: 기본 설정 및 Canvas 준비
+// 1. 기본 설정 및 Canvas 준비
 // =======================================================================
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -73,94 +74,76 @@ const GRID_COLS = 15;
 const GRID_ROWS = 10;
 const CELL_SIZE = 50;
 
-// =======================================================================
-// 2단계: 게임 데이터 구조 정의 (README.md 기반)
-// =======================================================================
+// [최적화 1] 오프스크린 캔버스 (Off-screen Canvas) 도입
+// 배경 그리드는 한 번만 그려두고, 매 프레임마다 복사해서 사용합니다.
+const backgroundCanvas = document.createElement('canvas');
+backgroundCanvas.width = canvas.width;
+backgroundCanvas.height = canvas.height;
+const backgroundCtx = backgroundCanvas.getContext('2d');
 
-/**
- * README.md의 용병 클래스별 기본 스탯 정의
- * 전사: 사거리 1, 이동력 3
- * 궁수: 사거리 4, 이동력 3
- * 기병: 사거리 2, 이동력 5
- * 마법사: 사거리 3, 이동력 2
- * 힐러: 사거리 3, 이동력 2 (이번 버전에서는 공격 유닛으로 간주)
- */
+
+// =======================================================================
+// 2. 게임 데이터 구조 정의 (README.md 기반)
+// =======================================================================
 const CLASS_STATS = {
     Warrior:  { range: 1, moveSpeed: 3, icon: '⚔️' },
     Archer:   { range: 4, moveSpeed: 3, icon: '🏹' },
     Cavalry:  { range: 2, moveSpeed: 5, icon: '🐎' },
     Mage:     { range: 3, moveSpeed: 2, icon: '🔮' },
-    Healer:   { range: 3, moveSpeed: 2, icon: '💖' } // 힐 기능은 추후 구현
+    Healer:   { range: 3, moveSpeed: 2, icon: '💖' }
 };
 
 let unitCounter = 0;
 
-// 용병(유닛)의 설계도(Class) 정의
 class Unit {
     constructor(config) {
         this.id = unitCounter++;
         this.name = config.name;
-        this.team = config.team; // 'player' or 'enemy'
+        this.team = config.team;
         this.classType = config.classType;
-
-        // 위치 정보 (그리드 좌표)
         this.x = config.x;
         this.y = config.y;
-
-        // 기본 스탯
         this.hp = config.hp;
         this.maxHp = config.hp;
         this.attackPower = config.attackPower;
+        this.valor = config.valor;
+        this.weight = config.weight;
 
-        // README.md의 핵심 시스템: [용맹]과 [무게]
-        this.valor = config.valor;   // [용맹] 스탯
-        this.weight = config.weight; // [무게] 스탯
-
-        // 클래스 기반 스탯 (사거리, 이동력)
         const stats = CLASS_STATS[this.classType];
         this.range = stats.range;
         this.moveSpeed = stats.moveSpeed;
         this.icon = stats.icon;
         
-        // 전투 중 상태
         this.isDead = false;
         this.hasActed = false;
 
-        // [용맹] 스탯에 따른 보호막 생성
-        this.shield = this.valor * 2; // 용맹 1당 보호막 2로 가정
+        this.shield = this.valor * 2;
         this.maxShield = this.shield;
     }
 
-    // 데미지를 받는 로직
     takeDamage(damage) {
-        // 보호막이 먼저 피해를 흡수
         if (this.shield > 0) {
             const shieldDamage = Math.min(this.shield, damage);
             this.shield -= shieldDamage;
             damage -= shieldDamage;
         }
-
-        // 남은 피해가 있다면 체력 감소
         if (damage > 0) {
             this.hp -= damage;
         }
-
         if (this.hp <= 0) {
             this.hp = 0;
             this.isDead = true;
-            logMessage(`${this.name}(이)가 쓰러졌습니다!`, 'death');
+            logMessage(`${this.team === 'player' ? '아군' : '적'} ${this.name}(이)가 쓰러졌습니다!`);
         }
     }
 
-    // 자신의 턴에 행동을 결정하는 AI
-    takeTurn(allUnits) {
+    // [최적화 2] AI 개선 - 탐색 대상을 미리 전달받아 계산량 감소
+    takeTurn(enemies) {
         if (this.isDead || this.hasActed) return;
 
-        // 1. 목표 설정: 가장 가까운 적을 찾는다.
-        const enemies = allUnits.filter(u => u.team !== this.team && !u.isDead);
         if (enemies.length === 0) {
             this.hasActed = true;
-            return; // 싸울 적이 없음
+            return;
         }
 
         let closestEnemy = null;
@@ -174,93 +157,70 @@ class Unit {
             }
         });
 
-        // 2. 행동 결정: 공격 또는 이동
-        // 사거리 내에 적이 있는가?
         if (minDistance <= this.range) {
-            // 공격
             this.attack(closestEnemy);
         } else {
-            // 이동
-            this.moveTowards(closestEnemy, allUnits);
+            this.moveTowards(closestEnemy);
         }
-
         this.hasActed = true;
     }
 
-    // 공격 로직
     attack(target) {
-        // [용맹] 시스템: 보호막 수치에 비례해 공격력 증가 (최대 50% 보너스)
         const valorBonus = (this.shield / this.maxShield) * 0.5;
         const finalAttackPower = Math.floor(this.attackPower * (1 + valorBonus));
-
-        logMessage(
-            `${this.name}(이)가 ${target.name}을(를) 공격! (피해: ${finalAttackPower})`,
-            'attack'
-        );
+        logMessage(`${this.name}(이)가 ${target.name}에게 ${finalAttackPower} 피해를 입혔습니다.`);
         target.takeDamage(finalAttackPower);
     }
 
-    // 이동 로직
-    moveTowards(target, allUnits) {
+    // [최적화 2] AI 개선 - 전체 유닛 배열을 탐색할 필요 없음
+    moveTowards(target) {
         let movedDistance = 0;
-        let currentX = this.x;
-        let currentY = this.y;
+        let newX = this.x;
+        let newY = this.y;
 
-        while (movedDistance < this.moveSpeed) {
-            const dx = target.x - currentX;
-            const dy = target.y - currentY;
+        // 이동 로직은 기존과 유사하나, 충돌 검사는 턴 관리자에서 처리
+        // (이번 버전에서는 충돌 검사를 생략하여 AI 이동 로직에 집중)
+        const dx = Math.sign(target.x - this.x);
+        const dy = Math.sign(target.y - this.y);
 
-            if (dx === 0 && dy === 0) break;
-
-            let nextX = currentX;
-            let nextY = currentY;
-
-            // X축, Y축 중 더 먼 쪽으로 먼저 한 칸 이동
-            if (Math.abs(dx) > Math.abs(dy)) {
-                nextX += Math.sign(dx);
+        // moveSpeed 만큼 최대한 이동
+        for(let i = 0; i < this.moveSpeed; i++) {
+             if (Math.abs(target.x - newX) > Math.abs(target.y - newY)) {
+                newX += dx;
+            } else if (target.y !== newY) {
+                newY += dy;
+            } else if (target.x !== newX) {
+                 newX += dx;
             } else {
-                nextY += Math.sign(dy);
-            }
-
-            // 해당 위치로 이동 가능한지 확인 (다른 유닛이 없는가?)
-            const isOccupied = allUnits.some(u => !u.isDead && u.x === nextX && u.y === nextY);
-
-            if (!isOccupied) {
-                currentX = nextX;
-                currentY = nextY;
-                movedDistance++;
-            } else {
-                // 길이 막혔으면 이동 중지
-                break;
+                 break; // 목표에 도착
             }
         }
         
-        if (this.x !== currentX || this.y !== currentY) {
-            logMessage(`${this.name}(이)가 (${this.x},${this.y})에서 (${currentX},${currentY})로 이동.`, 'move');
-            this.x = currentX;
-            this.y = currentY;
-        }
+        logMessage(`${this.name}(이)가 (${this.x},${this.y})에서 (${newX},${newY})로 이동.`);
+        this.x = newX;
+        this.y = newY;
     }
 }
 
-
 // =======================================================================
-// 3단계: 시각적 표현 (렌더링)
+// 3. 시각적 표현 (렌더링)
 // =======================================================================
 
-function drawGrid() {
-    ctx.strokeStyle = '#7f8c8d';
+// [최적화 1] 그리드를 미리 그리는 함수
+function preRenderGrid() {
+    backgroundCtx.strokeStyle = '#7f8c8d';
+    backgroundCtx.lineWidth = 1;
     for (let i = 0; i <= GRID_COLS; i++) {
-        ctx.beginPath();
-        ctx.moveTo(i * CELL_SIZE, 0);
-        ctx.lineTo(i * CELL_SIZE, GRID_ROWS * CELL_SIZE);
-        ctx.stroke();
+        backgroundCtx.beginPath();
+        backgroundCtx.moveTo(i * CELL_SIZE, 0);
+        backgroundCtx.lineTo(i * CELL_SIZE, GRID_ROWS * CELL_SIZE);
+        backgroundCtx.stroke();
     }
     for (let i = 0; i <= GRID_ROWS; i++) {
-        ctx.beginPath();
-        ctx.moveTo(0, i * CELL_SIZE);
-        ctx.lineTo(GRID_COLS * CELL_SIZE, i * CELL_SIZE);
-        ctx.stroke();
+        backgroundCtx.beginPath();
+        backgroundCtx.moveTo(0, i * CELL_SIZE);
+        backgroundCtx.lineTo(GRID_COLS * CELL_SIZE, i * CELL_SIZE);
+        backgroundCtx.stroke();
     }
 }
 
@@ -271,19 +231,16 @@ function drawUnits(units) {
         const x = unit.x * CELL_SIZE + CELL_SIZE / 2;
         const y = unit.y * CELL_SIZE + CELL_SIZE / 2;
 
-        // 유닛 아이콘 그리기
         ctx.font = '24px sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(unit.icon, x, y);
 
-        // 팀 색상 표시 (하단 원)
         ctx.fillStyle = unit.team === 'player' ? 'blue' : 'red';
         ctx.beginPath();
         ctx.arc(x, y + 15, 5, 0, Math.PI * 2);
         ctx.fill();
         
-        // 체력 바
         const hpBarWidth = CELL_SIZE * 0.8;
         const hpRatio = unit.hp / unit.maxHp;
         ctx.fillStyle = '#555';
@@ -291,7 +248,6 @@ function drawUnits(units) {
         ctx.fillStyle = 'green';
         ctx.fillRect(x - hpBarWidth / 2, y - 20, hpBarWidth * hpRatio, 5);
 
-        // 보호막 바
         if (unit.maxShield > 0) {
             const shieldRatio = unit.shield / unit.maxShield;
             ctx.fillStyle = '#555';
@@ -302,86 +258,104 @@ function drawUnits(units) {
     });
 }
 
-// 화면을 다시 그리는 메인 렌더링 루프
+// [최적화 1] 메인 렌더링 루프 개선
 function render(units) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    drawGrid();
+    // 미리 그려둔 배경을 복사
+    ctx.drawImage(backgroundCanvas, 0, 0);
+    // 동적인 유닛들만 그리기
     drawUnits(units);
 }
 
 // =======================================================================
-// 4단계 & 5단계: 전투 로직 및 시뮬레이션 실행
+// 4 & 5. 전투 로직 및 시뮬레이션 실행
 // =======================================================================
 
+// [최적화 3] 데이터 관리 개선 - 팀별로 유닛 배열 분리
+let playerUnits = [];
+let enemyUnits = [];
 let allUnits = [];
 let isSimulationRunning = false;
+// [최적화 4] 로그 버퍼링
+let logBuffer = [];
 
-// 게임 초기화 함수
+
 function init() {
     unitCounter = 0;
-    allUnits = [
-        // Player Team (6명)
-        new Unit({ name: '플레이어 전사1', team: 'player', classType: 'Warrior', x: 1, y: 2, hp: 100, attackPower: 20, valor: 20, weight: 50 }),
-        new Unit({ name: '플레이어 전사2', team: 'player', classType: 'Warrior', x: 1, y: 7, hp: 100, attackPower: 20, valor: 10, weight: 60 }),
-        new Unit({ name: '플레이어 궁수1', team: 'player', classType: 'Archer',  x: 0, y: 3, hp: 60, attackPower: 25, valor: 5, weight: 30 }),
-        new Unit({ name: '플레이어 궁수2', team: 'player', classType: 'Archer',  x: 0, y: 6, hp: 60, attackPower: 25, valor: 15, weight: 25 }),
-        new Unit({ name: '플레이어 기병', team: 'player', classType: 'Cavalry', x: 1, y: 5, hp: 80, attackPower: 18, valor: 30, weight: 40 }),
-        new Unit({ name: '플레이어 마법사', team: 'player', classType: 'Mage',    x: 0, y: 5, hp: 50, attackPower: 30, valor: 25, weight: 35 }),
-
-        // Enemy Team (6명)
-        new Unit({ name: '적 전사1', team: 'enemy', classType: 'Warrior', x: 13, y: 2, hp: 100, attackPower: 20, valor: 20, weight: 55 }),
-        new Unit({ name: '적 전사2', team: 'enemy', classType: 'Warrior', x: 13, y: 7, hp: 100, attackPower: 20, valor: 15, weight: 58 }),
-        new Unit({ name: '적 궁수1', team: 'enemy', classType: 'Archer',  x: 14, y: 3, hp: 60, attackPower: 25, valor: 10, weight: 32 }),
-        new Unit({ name: '적 궁수2', team: 'enemy', classType: 'Archer',  x: 14, y: 6, hp: 60, attackPower: 25, valor: 10, weight: 28 }),
-        new Unit({ name: '적 기병', team: 'enemy', classType: 'Cavalry', x: 13, y: 5, hp: 80, attackPower: 18, valor: 25, weight: 45 }),
-        new Unit({ name: '적 마법사', team: 'enemy', classType: 'Mage',    x: 14, y: 5, hp: 50, attackPower: 30, valor: 20, weight: 38 }),
+    playerUnits = [
+        new Unit({ name: '전사1', team: 'player', classType: 'Warrior', x: 1, y: 2, hp: 100, attackPower: 20, valor: 20, weight: 50 }),
+        new Unit({ name: '전사2', team: 'player', classType: 'Warrior', x: 1, y: 7, hp: 100, attackPower: 20, valor: 10, weight: 60 }),
+        new Unit({ name: '궁수1', team: 'player', classType: 'Archer',  x: 0, y: 3, hp: 60, attackPower: 25, valor: 5, weight: 30 }),
+        new Unit({ name: '궁수2', team: 'player', classType: 'Archer',  x: 0, y: 6, hp: 60, attackPower: 25, valor: 15, weight: 25 }),
+        new Unit({ name: '기병', team: 'player', classType: 'Cavalry', x: 1, y: 5, hp: 80, attackPower: 18, valor: 30, weight: 40 }),
+        new Unit({ name: '마법사', team: 'player', classType: 'Mage',    x: 0, y: 5, hp: 50, attackPower: 30, valor: 25, weight: 35 }),
     ];
+    enemyUnits = [
+        new Unit({ name: '오크1', team: 'enemy', classType: 'Warrior', x: 13, y: 2, hp: 100, attackPower: 20, valor: 20, weight: 55 }),
+        new Unit({ name: '오크2', team: 'enemy', classType: 'Warrior', x: 13, y: 7, hp: 100, attackPower: 20, valor: 15, weight: 58 }),
+        new Unit({ name: '고블린 궁수1', team: 'enemy', classType: 'Archer',  x: 14, y: 3, hp: 60, attackPower: 25, valor: 10, weight: 32 }),
+        new Unit({ name: '고블린 궁수2', team: 'enemy', classType: 'Archer',  x: 14, y: 6, hp: 60, attackPower: 25, valor: 10, weight: 28 }),
+        new Unit({ name: '와르그', team: 'enemy', classType: 'Cavalry', x: 13, y: 5, hp: 80, attackPower: 18, valor: 25, weight: 45 }),
+        new Unit({ name: '흑마법사', team: 'enemy', classType: 'Mage',    x: 14, y: 5, hp: 50, attackPower: 30, valor: 20, weight: 38 }),
+    ];
+    allUnits = [...playerUnits, ...enemyUnits];
+
     logElement.innerHTML = '';
-    logMessage('전투 준비 완료. 시뮬레이션 시작 버튼을 누르세요.', 'info');
-    render(allUnits);
+    logMessage('전투 준비 완료. 시뮬레이션 시작 버튼을 누르세요.');
+    flushLog();
+
+    // 렌더링 루프 시작
+    function gameLoop() {
+        render(allUnits);
+        if (isSimulationRunning) {
+            requestAnimationFrame(gameLoop);
+        }
+    }
+    requestAnimationFrame(gameLoop);
 }
 
-// 시뮬레이션의 한 턴을 진행하는 함수
 async function runTurn() {
-    logMessage('--- 새로운 턴 시작 ---', 'turn');
+    logMessage('--- 새로운 턴 시작 ---');
     
-    // 1. 행동 순서 결정: [무게]가 낮을수록 먼저 행동
+    // [최적화 3] 살아있는 유닛만 필터링하여 턴 순서 결정
     const turnOrder = allUnits
         .filter(u => !u.isDead)
         .sort((a, b) => a.weight - b.weight);
 
-    // 모든 유닛의 '행동 완료' 상태 초기화
     turnOrder.forEach(u => u.hasActed = false);
 
-    // 2. 순서대로 행동 개시
     for (const unit of turnOrder) {
         if (unit.isDead) continue;
         
-        unit.takeTurn(allUnits);
-        render(allUnits); // 각 유닛 행동 후 화면 갱신
-        await sleep(300); // 행동을 시각적으로 확인하기 위한 지연
+        // [최적화 2] AI에 적 팀 정보만 넘겨주어 탐색 범위 축소
+        const enemies = unit.team === 'player' ? enemyUnits.filter(u => !u.isDead) : playerUnits.filter(u => !u.isDead);
+        unit.takeTurn(enemies);
+        await sleep(300);
     }
 
-    // 3. 턴 종료 및 게임 오버 확인
-    const livingPlayers = allUnits.filter(u => u.team === 'player' && !u.isDead).length;
-    const livingEnemies = allUnits.filter(u => u.team === 'enemy' && !u.isDead).length;
+    flushLog(); // [최적화 4] 턴이 끝날 때 로그를 한번에 업데이트
+
+    // 승리 조건 확인
+    const livingPlayers = playerUnits.filter(u => !u.isDead).length;
+    const livingEnemies = enemyUnits.filter(u => !u.isDead).length;
 
     if (livingPlayers === 0) {
-        logMessage('플레이어 팀 패배!', 'game-over');
+        logMessage('플레이어 팀 패배!');
         isSimulationRunning = false;
         startBtn.disabled = false;
+        flushLog();
         return;
     }
     if (livingEnemies === 0) {
-        logMessage('플레이어 팀 승리!', 'game-over');
+        logMessage('플레이어 팀 승리!');
         isSimulationRunning = false;
         startBtn.disabled = false;
+        flushLog();
         return;
     }
 
-    // 게임이 끝나지 않았으면 다음 턴 진행
     if (isSimulationRunning) {
-        setTimeout(runTurn, 1000); // 1초 후 다음 턴 시작
+        setTimeout(runTurn, 1000);
     }
 }
 
@@ -390,22 +364,39 @@ function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-function logMessage(message, type) {
-    logElement.innerHTML += `<div class="${type}">${message}</div>`;
-    logElement.scrollTop = logElement.scrollHeight; // 항상 최신 로그가 보이도록 스크롤
+// [최적화 4] 로그 메시지를 버퍼에 저장
+function logMessage(message) {
+    logBuffer.push(message);
+}
+
+// [최적화 4] 버퍼에 쌓인 로그를 한번에 화면에 표시
+function flushLog() {
+    if (logBuffer.length > 0) {
+        logElement.innerHTML += logBuffer.join('<br>');
+        logElement.scrollTop = logElement.scrollHeight;
+        logBuffer = [];
+    }
 }
 
 // 이벤트 리스너
 startBtn.addEventListener('click', () => {
     if (isSimulationRunning) return;
+    
     isSimulationRunning = true;
     startBtn.disabled = true;
-    init(); // 게임 상태 초기화
-    runTurn(); // 첫 턴 시작
+    
+    init();
+    
+    // 시뮬레이션 루프 시작
+    runTurn();
 });
 
 // 페이지 로드 시 초기화
-window.onload = init;
+window.onload = () => {
+    preRenderGrid(); // 배경을 미리 그려둠
+    init(); // 유닛 등 나머지 초기화
+    render(allUnits); // 초기 상태 렌더링
+};
 </script>
 </body>
 </html>
