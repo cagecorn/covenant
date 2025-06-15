@@ -275,35 +275,42 @@ class Unit {
 let playerUnits=[],enemyUnits=[],allUnits=[],isSimulationRunning=!1,logBuffer=[];
 
 // [12v12] 유닛 생성 및 배치 로직 변경
-function init(){
-    // 플레이어 팀 12명 생성
+function init() {
+    // [12v12] 유닛 생성 및 배치 로직
     const playerTemplates = [
         'p_knight', 'p_knight', 'p_warrior', 'p_warrior', 'p_warrior', 'p_cavalry', 
         'p_cavalry', 'p_archer', 'p_archer', 'p_mage', 'p_mage', 'p_healer'
     ];
     playerUnits = playerTemplates.map((key, i) => {
-        const x = Math.floor(i / 5); // 0, 1, 2 열에 배치
-        const y = (i % 5) * 2;       // 0, 2, 4, 6, 8 행에 배치
+        const x = Math.floor(i / 5);
+        const y = (i % 5) * 2;
         return new Unit(UNIT_TEMPLATES[key], "player", x, y);
     });
 
-    // 적 팀 12명 생성
     const enemyTemplates = [
         'e_troll', 'e_troll', 'e_warrior', 'e_warrior', 'e_warrior', 'e_cavalry', 
         'e_cavalry', 'e_archer', 'e_archer', 'e_mage', 'e_mage', 'e_shaman'
     ];
     enemyUnits = enemyTemplates.map((key, i) => {
-        const x = (GRID_COLS - 1) - Math.floor(i / 5); // 14, 13, 12 열에 배치
-        const y = (i % 5) * 2;                          // 0, 2, 4, 6, 8 행에 배치
+        const x = (GRID_COLS - 1) - Math.floor(i / 5);
+        const y = (i % 5) * 2;
         return new Unit(UNIT_TEMPLATES[key], "enemy", x, y);
     });
     
     allUnits=[...playerUnits,...enemyUnits];
+
+    // [총괄 매니저] 전투 시작 전, 외부 요인 적용 (핵심 수정 사항)
     battleMaster.prepareBattle(allUnits, battleContext);
+
+    // [트리거 시스템] 각 유닛의 트리거 스킬 등록
     allUnits.forEach(unit => unit.registerTriggers());
-    logMessage("--- 12 vs 12 전투 시작! 패시브 스킬 발동 ---");
+    
+    // [상태이상] 패시브 스킬 발동
+    logMessage("--- 전투 시작! 패시브 스킬 발동 ---");
     allUnits.forEach(t=>t.applyPassiveSkills());
     flushLog();
+
+    // 초기화 메시지 및 렌더링 루프 시작
     logElement.innerHTML = "";
     logMessage("전투 준비 완료. 시뮬레이션 시작 버튼을 누르세요.");
     flushLog();
