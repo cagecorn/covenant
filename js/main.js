@@ -42,8 +42,8 @@ function init() {
     const playerTemplates = ['p_knight','p_warrior','p_cavalry','p_archer','p_mage','p_healer'];
     const enemyTemplates = ['e_troll','e_warrior','e_cavalry','e_archer','e_mage','e_shaman'];
     
-    playerUnits = playerTemplates.map((key, i) => new Unit(UNIT_TEMPLATES[key], "player", 1, i + 2));
-    enemyUnits = enemyTemplates.map((key, i) => new Unit(UNIT_TEMPLATES[key], "enemy", GRID_COLS - 2, i + 2));
+    playerUnits = playerTemplates.map((key, i) => new Unit(UNIT_TEMPLATES[key], "player", 1, i + 2, { logManager, eventManager, vfxManager, statusEffectManager }));
+    enemyUnits = enemyTemplates.map((key, i) => new Unit(UNIT_TEMPLATES[key], "enemy", GRID_COLS - 2, i + 2, { logManager, eventManager, vfxManager, statusEffectManager }));
     
     allUnits=[...playerUnits,...enemyUnits];
 
