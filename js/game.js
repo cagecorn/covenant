@@ -9,6 +9,7 @@ backgroundCanvas.width = canvas.width;
 backgroundCanvas.height = canvas.height;
 const backgroundCtx = backgroundCanvas.getContext('2d');
 
+
 // [로그개선] 전투 로그를 체계적으로 관리하는 매니저
 class BattleLogManager {
     constructor(logElement) {
@@ -40,20 +41,22 @@ class BattleLogManager {
     }
 }
 
+const logManager = new BattleLogManager(document.getElementById('log'));
+
 // [총괄 매니저] 전투 외부 요인을 반영하는 총괄 매니저
 const battleMaster = {
     prepareBattle: (units, context) => {
-        logMessage(`--- [${context.terrain}] 지형, [${context.weather}] 날씨에서 전투 시작! ---`);
+        logManager.add(`--- [${context.terrain}] 지형, [${context.weather}] 날씨에서 전투 시작! ---`);
         units.forEach(unit => {
             // 지형 효과 적용
             if (context.terrain === '숲' && unit.classType === 'Archer') {
                 unit.contextualBonus.attack += 5;
-                logMessage(`🏹 숲 지형 효과로 ${unit.name}의 공격력이 5 증가합니다.`);
+                logManager.add(`🏹 숲 지형 효과로 ${unit.name}의 공격력이 5 증가합니다.`);
             }
             // 날씨 효과 적용
             if (context.weather === '비' && unit.elementalType === 'fire') {
                 unit.contextualBonus.attack -= 5;
-                logMessage(`💧 비 날씨 효과로 화염 속성 ${unit.name}의 공격력이 5 감소합니다.`);
+                logManager.add(`💧 비 날씨 효과로 화염 속성 ${unit.name}의 공격력이 5 감소합니다.`);
             }
             // 그 외 영지 버프, 음식 버프 등 모든 외부 요인을 이곳에서 처리
         });
@@ -113,7 +116,7 @@ class StatusEffectManager {
         };
         this.activeEffects.push(effect);
         target.statusEffects[effect.name] = effect; // 유닛은 빠른 조회를 위해 참조만 가짐
-        logMessage(`${target.name}(이)가 [${effect.name}] 효과를 얻었습니다! (${effect.duration}턴 지속)`);
+        logManager.add(`${target.name}(이)가 [${effect.name}] 효과를 얻었습니다! (${effect.duration}턴 지속)`);
     }
 
     // 상태이상 제거
@@ -121,17 +124,17 @@ class StatusEffectManager {
         if (target.hasStatus && target.hasStatus(statusName)) {
             this.activeEffects = this.activeEffects.filter(e => !(e.target === target && e.name === statusName));
             delete target.statusEffects[statusName];
-            logMessage(`${target.name}의 [${statusName}] 효과가 사라졌습니다.`);
+            logManager.add(`${target.name}의 [${statusName}] 효과가 사라졌습니다.`);
         }
     }
     
     // 턴 종료 시, 모든 효과를 한번에 처리
     updateTurn() {
-        logMessage("--- 상태이상 효과 정리 시작 ---");
+        logManager.add("--- 상태이상 효과 정리 시작 ---");
         // 도트 데미지 및 힐 적용
         this.activeEffects.forEach(effect => {
             if (effect.name === 'poison' && !effect.target.isDead) {
-                logMessage(`☠️ ${effect.target.name}(이)가 독 데미지로 ${effect.details.damage} 피해!`);
+                logManager.add(`☠️ ${effect.target.name}(이)가 독 데미지로 ${effect.details.damage} 피해!`);
                 effect.target.takeDamage(effect.details.damage);
             }
         });
@@ -180,20 +183,20 @@ const SKILLS = {
         probability: 0.4,
         effect: (caster, target) => {
             const damage = Math.floor(caster.getAttackPower() * 1.5);
-            logMessage(`💥 ${caster.name}의 [${SKILLS.powerStrike.name}]! ${target.name}에게 ${damage} 피해!`);
+            logManager.add(`💥 ${caster.name}의 [${SKILLS.powerStrike.name}]! ${target.name}에게 ${damage} 피해!`);
             target.takeDamage(damage);
             eventManager.publish('skillUsed', { caster: caster, target: target, skill: SKILLS.powerStrike });
         }
     },
-    heal: { name: '치유', type: 'active', probability: 0.6, effect: (caster, target) => { const healAmount = Math.floor(caster.attackPower * 2.5); target.hp = Math.min(target.maxHp, target.hp + healAmount); logMessage(`💖 ${caster.name}의 [${SKILLS.heal.name}]! ${target.name}의 체력 ${healAmount} 회복!`); }},
-    stoneSkin: { name: '스톤 스킨', type: 'passive', effect: (caster) => { caster.shield += 20; caster.maxShield += 20; logMessage(`🛡️ ${caster.name} [${SKILLS.stoneSkin.name}] 발동! 보호막 20 증가!`); }},
+    heal: { name: '치유', type: 'active', probability: 0.6, effect: (caster, target) => { const healAmount = Math.floor(caster.attackPower * 2.5); target.hp = Math.min(target.maxHp, target.hp + healAmount); logManager.add(`💖 ${caster.name}의 [${SKILLS.heal.name}]! ${target.name}의 체력 ${healAmount} 회복!`); }},
+    stoneSkin: { name: '스톤 스킨', type: 'passive', effect: (caster) => { caster.shield += 20; caster.maxShield += 20; logManager.add(`🛡️ ${caster.name} [${SKILLS.stoneSkin.name}] 발동! 보호막 20 증가!`); }},
     deathRattle: {
         name: '죽음의 메아리',
         type: 'triggered',
         eventName: 'unitDeath',
         effect: (payload, owner) => {
             if (payload.unit === owner) {
-                logMessage(`🔥 ${owner.name}의 [죽음의 메아리] 발동!`);
+                logManager.add(`🔥 ${owner.name}의 [죽음의 메아리] 발동!`);
             }
         }
     },
@@ -205,7 +208,7 @@ const SKILLS = {
             if (payload.caster === owner) {
                 const healAmount = Math.floor(payload.damage * 0.2);
                 owner.hp = Math.min(owner.maxHp, owner.hp + healAmount);
-                logMessage(`🩸 ${owner.name}이 [흡혈의 손길]로 체력을 ${healAmount} 회복!`);
+                logManager.add(`🩸 ${owner.name}이 [흡혈의 손길]로 체력을 ${healAmount} 회복!`);
             }
         }
     }
@@ -246,7 +249,7 @@ class Unit {
 
         // 턴 낭비형 상태이상 체크 (이 부분은 유지)
         if (this.hasStatus('paralysis') || this.hasStatus('sleep')) {
-            logMessage(`... ${this.name}(이)가 행동 불능 상태입니다!`);
+            logManager.add(`... ${this.name}(이)가 행동 불능 상태입니다!`);
             this.hasActed = true;
             return;
         }
@@ -266,7 +269,7 @@ class Unit {
         if (this.hp <= 0 && !this.isDead) {
             this.hp = 0;
             this.isDead = true;
-            logMessage(`💀 ${this.name} 쓰러짐!`);
+            logManager.add(`💀 ${this.name} 쓰러짐!`);
             eventManager.publish('unitDeath', { unit: this });
         }
     }
@@ -275,7 +278,7 @@ class Unit {
     attemptSkillOrAttack(target){ let didUseSkill = false; for (const skillKey of this.skills) { const skill = SKILLS[skillKey]; if (skill?.type === 'active' && skill.name !== '치유' && Math.random() < skill.probability) { skill.effect(this, target); didUseSkill = true; break; } } if (!didUseSkill) this.basicAttack(target); }
     basicAttack(target) {
         const damage = this.getAttackPower();
-        logMessage(`⚔️ ${this.name} → ${target.name} 일반 공격! (${damage} 피해)`);
+        logManager.add(`⚔️ ${this.name} → ${target.name} 일반 공격! (${damage} 피해)`);
         target.takeDamage(damage);
         eventManager.publish('unitAttack', { caster: this, target: target, damage: damage });
     }
@@ -286,7 +289,7 @@ class Unit {
 // =======================================================================
 // 3. 렌더링 및 4, 5. 시뮬레이션 실행
 // =======================================================================
-let playerUnits=[],enemyUnits=[],allUnits=[],isSimulationRunning=!1,logBuffer=[];
+let playerUnits=[],enemyUnits=[],allUnits=[],isSimulationRunning=!1;
 
 // [12v12] 유닛 생성 및 배치 로직 변경
 function init() {
@@ -320,21 +323,21 @@ function init() {
     allUnits.forEach(unit => unit.registerTriggers());
     
     // [상태이상] 패시브 스킬 발동
-    logMessage("--- 전투 시작! 패시브 스킬 발동 ---");
+    logManager.add("--- 전투 시작! 패시브 스킬 발동 ---");
     allUnits.forEach(t=>t.applyPassiveSkills());
-    flushLog();
+    logManager.flush();
 
     // 초기화 메시지 및 렌더링 루프 시작
-    logElement.innerHTML = "";
-    logMessage("전투 준비 완료. 시뮬레이션 시작 버튼을 누르세요.");
-    flushLog();
+    logManager.clear();
+    logManager.add("전투 준비 완료. 시뮬레이션 시작 버튼을 누르세요.");
+    logManager.flush();
     let t=function(){render(allUnits),isSimulationRunning&&requestAnimationFrame(t)};
     requestAnimationFrame(t);
 }
 
 // 나머지 실행 로직은 v0.6과 동일합니다.
 async function runTurn() {
-    logMessage("--- 새로운 턴 시작 ---");
+    logManager.add("--- 새로운 턴 시작 ---");
     const turnOrder = allUnits
         .filter(u => !u.isDead)
         .sort((a, b) => a.weight - b.weight);
@@ -354,22 +357,22 @@ async function runTurn() {
         await sleep(100);
     }
 
-    logMessage("--- 모든 유닛 행동 종료 ---");
+    logManager.add("--- 모든 유닛 행동 종료 ---");
     statusEffectManager.updateTurn();
-    flushLog();
+    logManager.flush();
 
     if (playerUnits.filter(u => !u.isDead).length === 0) {
-        logMessage("패배!");
+        logManager.add("패배!");
         isSimulationRunning = false;
         startBtn.disabled = false;
-        return flushLog();
+        return logManager.flush();
     }
 
     if (enemyUnits.filter(u => !u.isDead).length === 0) {
-        logMessage("승리!");
+        logManager.add("승리!");
         isSimulationRunning = false;
         startBtn.disabled = false;
-        return flushLog();
+        return logManager.flush();
     }
 
     if (isSimulationRunning) {
@@ -380,7 +383,5 @@ function preRenderGrid(){backgroundCtx.strokeStyle="#7f8c8d",backgroundCtx.lineW
 function drawUnits(t){t.forEach(t=>{if(t.isDead)return;const e=t.x*CELL_SIZE+CELL_SIZE/2,i=t.y*CELL_SIZE+CELL_SIZE/2;ctx.font="24px sans-serif",ctx.textAlign="center",ctx.textBaseline="middle",ctx.fillText(t.icon,e,i),ctx.fillStyle="player"===t.team?"#3498db":"#e74c3c",ctx.beginPath(),ctx.arc(e,i+15,5,0,2*Math.PI),ctx.fill();const s=.8*CELL_SIZE,a=t.hp/t.maxHp;if(ctx.fillStyle="#555",ctx.fillRect(e-s/2,i-20,s,5),ctx.fillStyle="green",ctx.fillRect(e-s/2,i-20,s*a,5),t.maxShield>0){const a=t.shield/t.maxShield;ctx.fillStyle="#555",ctx.fillRect(e-s/2,i-26,s,5),ctx.fillStyle="cyan",ctx.fillRect(e-s/2,i-26,s*a,5)}})}
 function render(t){ctx.clearRect(0,0,canvas.width,canvas.height),ctx.drawImage(backgroundCanvas,0,0),drawUnits(t)}
 function sleep(t){return new Promise(e=>setTimeout(e,t))}
-function logMessage(t){logBuffer.push(t)}
-function flushLog(){logBuffer.length>0&&(logElement.innerHTML+=logBuffer.join("<br>"),logElement.scrollTop=logElement.scrollHeight,logBuffer=[])}
 startBtn.addEventListener("click",()=>{isSimulationRunning||(isSimulationRunning=!0,startBtn.disabled=!0,init(),runTurn())});
 window.onload=()=>{preRenderGrid(),init(),render(allUnits)};
