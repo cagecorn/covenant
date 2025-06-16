@@ -65,7 +65,7 @@ function init() {
     allUnits=[...playerUnits,...enemyUnits];
 
     // 매니저 시스템 작동
-    battleMaster.prepareBattle(allUnits, battleContext);
+    battleMaster.prepareBattle(allUnits, battleContext, logManager);
     allUnits.forEach(unit => unit.registerTriggers());
 
     logManager.add("--- 전투 시작! 패시브 스킬 발동 ---");
