@@ -215,9 +215,9 @@ const statusEffectManager = new StatusEffectManager();
 const eventManager = new EventManager();
 
 const AI_STRATEGIES = {
-    aggressive: (unit, enemies) => { const target = unit.findBestTarget(enemies); if (target) { unit.moveTowards(target); if(unit.isInRange(target)) unit.attemptSkillOrAttack(target); }},
+    aggressive: (unit, enemies) => { const target = unit.findBestTarget(enemies); if (target) { unit.moveTowards(target, true); if(unit.isInRange(target)) unit.attemptSkillOrAttack(target); }},
     kiting: (unit, enemies) => { const target = unit.findBestTarget(enemies); if (target) { const distance = unit.getDistance(target); const safeDistance = unit.range - 1; if (distance < safeDistance) unit.moveAwayFrom(target); else if (distance > unit.range) unit.moveTowards(target, true); if(unit.isInRange(target)) unit.attemptSkillOrAttack(target); }},
-    assassin: (unit, enemies) => { const priorityClasses = ['Archer', 'Mage', 'Healer']; let priorityTargets = enemies.filter(e => priorityClasses.includes(e.classType)); let target = unit.findBestTarget(priorityTargets); if (!target) target = unit.findBestTarget(enemies); if (target) { unit.moveTowards(target); if(unit.isInRange(target)) unit.attemptSkillOrAttack(target); }},
+    assassin: (unit, enemies) => { const priorityClasses = ['Archer', 'Mage', 'Healer']; let priorityTargets = enemies.filter(e => priorityClasses.includes(e.classType)); let target = unit.findBestTarget(priorityTargets); if (!target) target = unit.findBestTarget(enemies); if (target) { unit.moveTowards(target, true); if(unit.isInRange(target)) unit.attemptSkillOrAttack(target); }},
     support: (unit, enemies, allies) => {
         const healTarget = allies.concat(unit).filter(a => !a.isDead && a.hp < a.maxHp).sort((a,b) => (a.hp/a.maxHp) - (b.hp/b.maxHp))[0];
         if (healTarget) {
