@@ -11,8 +11,8 @@ export const AI_STRATEGIES = {
         
         const target = unit.findBestTarget(enemies);
         if (target) {
-            unit.moveTowards(target); // 1. 먼저 목표를 향해 이동하고,
-            // 2. 이동이 끝난 그 자리에서 즉시 사거리를 확인하여 공격
+            // 항상 사거리까지만 이동하도록 수정
+            unit.moveTowards(target, true);
             if (unit.isInRange(target)) {
                 unit.attemptSkillOrAttack(target);
             }
@@ -53,8 +53,9 @@ export const AI_STRATEGIES = {
         }
 
         if (target) {
-            unit.moveTowards(target); // 1. 목표를 향해 이동
-            if (unit.isInRange(target)) { // 2. 이동 후 공격
+            // 목표를 향해 이동하되, 사거리까지만 접근
+            unit.moveTowards(target, true);
+            if (unit.isInRange(target)) {
                 unit.attemptSkillOrAttack(target);
             }
         }
