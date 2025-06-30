@@ -2,7 +2,7 @@
 // 이 파일은 게임의 핵심 실행 로직을 담당합니다.
 
 import { BattleLogManager, VisualEffectManager, EventManager, StatusEffectManager, battleMaster } from './managers.js';
-import { CombatManager } from './combatManager.js'; // 새로 만든 CombatManager를 가져옵니다.
+import { CombatManager } from './combatManager.js';
 
 // --- 전역 변수 및 UI 요소 ---
 const canvas = document.getElementById('gameCanvas');
@@ -16,22 +16,13 @@ const vfxManager = new VisualEffectManager();
 const eventManager = new EventManager();
 const statusEffectManager = new StatusEffectManager();
 
-// 모든 매니저를 하나의 객체로 묶어 관리
-const allManagers = {
-    logManager,
-    vfxManager,
-    eventManager,
-    statusEffectManager,
-    battleMaster // battleMaster도 매니저 그룹에 포함
-};
+const allManagers = { logManager, vfxManager, eventManager, statusEffectManager, battleMaster };
+const uiControls = { startBtn };
 
 // --- CombatManager 인스턴스 생성 ---
-const combatManager = new CombatManager(allManagers);
-
+const combatManager = new CombatManager(allManagers, uiControls);
 
 // --- 렌더링 관련 함수 ---
-
-// 그리드 배경 미리 그리기
 const backgroundCanvas = document.createElement('canvas');
 backgroundCanvas.width = canvas.width;
 backgroundCanvas.height = canvas.height;
@@ -63,14 +54,10 @@ function drawUnits(units) {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(unit.icon, x, y);
-
-        // 팀 구분 색상
         ctx.fillStyle = unit.team === 'player' ? '#3498db' : '#e74c3c';
         ctx.beginPath();
         ctx.arc(x, y + 15, 5, 0, 2 * Math.PI);
         ctx.fill();
-
-        // 체력 및 보호막 바
         const hpBarWidth = CELL_SIZE * 0.8;
         const hpRatio = unit.hp / unit.maxHp;
         ctx.fillStyle = '#555';
@@ -97,27 +84,13 @@ function render(units) {
     vfxManager.draw(ctx);
 }
 
-// --- 게임 루프 및 이벤트 리스너 ---
-
-function gameLoop(units) {
-    render(units);
-}
-
+// --- 이벤트 리스너 ---
 startBtn.addEventListener('click', () => {
-    startBtn.disabled = true;
-    combatManager.stopSimulation(); // 이전 시뮬레이션 정리
-    combatManager.startSimulation(gameLoop);
+    combatManager.startSimulation(render);
 });
-
-// 게임오버 이벤트 구독
-eventManager.subscribe('gameOver', (payload) => {
-    console.log(`게임 종료: ${payload.result}`);
-    startBtn.disabled = false; // 버튼 다시 활성화
-});
-
 
 window.onload = () => {
     preRenderGrid();
-    combatManager.init(); // 초기 유닛 정보 표시를 위해 init 호출
+    combatManager.init();
     render(combatManager.allUnits);
 };
