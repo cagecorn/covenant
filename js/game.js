@@ -211,7 +211,7 @@ class StatusEffectManager {
         });
     }
 }
-const statusEffectManager = new StatusEffectManager();
+const statusEffectManager = new StatusEffectManager(logManager);
 const eventManager = new EventManager();
 
 const AI_STRATEGIES = {

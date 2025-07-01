@@ -14,7 +14,7 @@ const CELL_SIZE = 50, GRID_COLS = 15, GRID_ROWS = 10;
 const logManager = new BattleLogManager(document.getElementById('log'));
 const vfxManager = new VisualEffectManager();
 const eventManager = new EventManager();
-const statusEffectManager = new StatusEffectManager();
+const statusEffectManager = new StatusEffectManager(logManager);
 
 const allManagers = { logManager, vfxManager, eventManager, statusEffectManager, battleMaster };
 const uiControls = { startBtn };
