@@ -82,7 +82,10 @@ export class EventManager {
 }
 
 export class StatusEffectManager {
-    constructor() { this.activeEffects = []; }
+    constructor(logManager) {
+        this.activeEffects = [];
+        this.logManager = logManager;
+    }
     register(caster, target, skill) {
         const effect = {
             id: (Math.random() + 1).toString(36).substring(7),
@@ -94,19 +97,19 @@ export class StatusEffectManager {
         };
         this.activeEffects.push(effect);
         target.statusEffects[effect.name] = effect;
-        logManager.add(`${target.name}(이)가 [${effect.name}] 효과를 얻었습니다! (${effect.duration}턴 지속)`);
+        this.logManager.add(`${target.name}(이)가 [${effect.name}] 효과를 얻었습니다! (${effect.duration}턴 지속)`);
     }
     remove(target, statusName) {
         if (target.hasStatus(statusName)) {
             this.activeEffects = this.activeEffects.filter(e => !(e.target === target && e.name === statusName));
             delete target.statusEffects[statusName];
-            logManager.add(`${target.name}의 [${statusName}] 효과가 사라졌습니다.`);
+            this.logManager.add(`${target.name}의 [${statusName}] 효과가 사라졌습니다.`);
         }
     }
     updateTurn() {
         this.activeEffects.forEach(effect => {
             if (effect.name === 'poison' && !effect.target.isDead) {
-                logManager.add(`☠️ ${effect.target.name}(이)가 독 데미지로 ${effect.details.damage} 피해!`, 'attack');
+                this.logManager.add(`☠️ ${effect.target.name}(이)가 독 데미지로 ${effect.details.damage} 피해!`, 'attack');
                 effect.target.takeDamage(effect.details.damage);
             }
         });
