@@ -280,6 +280,7 @@ async function runTurn() {
                 ? playerUnits.filter(u => !u.isDead)
                 : enemyUnits.filter(u => !u.isDead);
         unit.takeTurn(enemies, allies);
+        logManager.flush();
         await sleep(100);
     }
 
