@@ -63,12 +63,21 @@ export class CombatManager {
     }
 
     // 시뮬레이션 시작
-    startSimulation(renderCallback) {
+    async startSimulation(renderCallback) {
         if (this.isSimulationRunning) return;
         this.isSimulationRunning = true;
         this.ui.startBtn.disabled = true;
 
         this.init();
+        if (this.managers.imageManager) {
+            const units = this.allUnits;
+            const promises = units.map(u =>
+                this.managers.imageManager.load(u.image).then(img => {
+                    u.sprite = img;
+                })
+            );
+            await Promise.all(promises);
+        }
         this.runTurn(); // 최초 턴 실행
 
         const loop = () => {

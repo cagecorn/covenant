@@ -97,8 +97,8 @@ export class SimulationManager {
         this.combatManager.init();
         await this.loadUnitSprites();
         this.render(this.combatManager.allUnits);
-        this.startBtn.addEventListener('click', () => {
-            this.combatManager.startSimulation(units => this.render(units));
+        this.startBtn.addEventListener('click', async () => {
+            await this.combatManager.startSimulation(units => this.render(units));
         });
     }
 }
