@@ -1,3 +1,5 @@
+import { SKILLS } from '../../src/data/skills.js';
+
 export class AiManager {
     constructor(metaManager = null) {
         this.metaManager = metaManager;
@@ -21,7 +23,7 @@ export class AiManager {
                 const target = unit.findBestTarget(enemies);
                 if (target) {
                     const distance = unit.getDistance(target);
-                    const safeDistance = unit.range > 1 ? unit.range - 1 : 1;
+                    const safeDistance = Math.max(1, unit.range - 1);
                     if (distance < safeDistance) {
                         unit.moveAwayFrom(target);
                     } else if (distance > unit.range) {
@@ -62,8 +64,11 @@ export class AiManager {
                 if (healTarget && unit.hasSkill('heal')) {
                     unit.moveTowards(healTarget, true);
                     if (unit.isInRange(healTarget)) {
-                        unit.useSkill('heal', healTarget);
-                        return;
+                        const healSkill = SKILLS[unit.skills.find(key => SKILLS[key]?.name === '치유')];
+                        if (!healSkill || Math.random() < healSkill.probability) {
+                            unit.useSkill('heal', healTarget);
+                            return;
+                        }
                     }
                 }
                 this.strategies.kiting(unit, enemies, allies);
