@@ -95,6 +95,8 @@ export class CombatManager {
 
         this.managers.logManager.add("--- 새로운 턴 시작 ---");
         const turnOrder = this.allUnits.filter(u => !u.isDead).sort((a, b) => a.weight - b.weight);
+        // 모든 유닛의 행동 여부를 새 턴마다 초기화합니다.
+        turnOrder.forEach(u => (u.hasActed = false));
 
         for (const unit of turnOrder) {
             if (unit.isDead || !this.isSimulationRunning) continue;
