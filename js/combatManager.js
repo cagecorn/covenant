@@ -104,7 +104,10 @@ export class CombatManager {
             const allies = unit.team === 'player' ? this.playerUnits.filter(u => !u.isDead) : this.enemyUnits.filter(u => !u.isDead);
             unit.takeTurn(enemies, allies);
             this.managers.logManager.flush();
-            await this.sleep(100);
+            if (this.managers.animationManager) {
+                await this.managers.animationManager.playQueuedMovements();
+            }
+            await this.managers.delayManager.wait(100);
         }
 
         if (!this.isSimulationRunning) return;
