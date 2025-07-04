@@ -14,7 +14,7 @@ export class VisualEffectManager {
             text,
             color,
             x: target.x * this.cellSize + this.cellSize / 2,
-            y: target.y * this.cellSize,
+            y: (target.y + 0.5) * this.cellSize,
             duration: 60,
         });
     }
@@ -31,14 +31,15 @@ export class VisualEffectManager {
         });
     }
 
-    drawStatusIcons(ctx, unit) {
+    drawStatusIcons(ctx, unit, baseX = null, centerY = null) {
         const statuses = Object.keys(unit.statusEffects);
         if (statuses.length === 0) return;
-        const startX = unit.x * this.cellSize + (this.cellSize - statuses.length * 12) / 2;
+        const startX = (baseX ?? (unit.x * this.cellSize + this.cellSize / 2)) - (statuses.length * 12) / 2;
+        const drawY = (centerY ?? ((unit.y + 0.5) * this.cellSize)) - this.cellSize / 2 - 10;
         statuses.forEach((statusName, i) => {
             const icon = this.getStatusIcon(statusName);
             ctx.font = '12px sans-serif';
-            ctx.fillText(icon, startX + i * 12, unit.y * this.cellSize - 10);
+            ctx.fillText(icon, startX + i * 12, drawY);
         });
     }
 
