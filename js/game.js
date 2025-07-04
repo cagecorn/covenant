@@ -1,6 +1,12 @@
 // =======================================================================
 // 1. 기본 설정 및 데이터 정의 (v0.6과 거의 동일)
 // =======================================================================
+import { BattleLogManager } from './managers/BattleLogManager.js';
+import { VisualEffectManager } from './managers/VisualEffectManager.js';
+import { EventManager } from './managers/EventManager.js';
+import { StatusEffectManager } from './managers/StatusEffectManager.js';
+import { battleMaster } from './managers/BattleMaster.js';
+
 const canvas = document.getElementById('gameCanvas'), ctx = canvas.getContext('2d');
 const startBtn = document.getElementById('startBtn'), logElement = document.getElementById('log');
 const GRID_COLS = 15, GRID_ROWS = 10, CELL_SIZE = 50;
@@ -11,118 +17,11 @@ const backgroundCtx = backgroundCanvas.getContext('2d');
 
 
 // [로그개선] 전투 로그를 체계적으로 관리하는 매니저
-class BattleLogManager {
-    constructor(logElement) {
-        this.logElement = logElement;
-        this.logBuffer = [];
-    }
-
-    // 로그 메시지를 버퍼에 추가
-    add(message, type = 'info') {
-        this.logBuffer.push({ message, type });
-    }
-
-    // 버퍼의 모든 로그를 화면에 출력
-    flush() {
-        if (this.logBuffer.length > 0) {
-            const newLogs = this.logBuffer
-                .map(log => `<div class="log-${log.type}">${log.message}</div>`)
-                .join('');
-            this.logElement.innerHTML += newLogs;
-            this.logElement.scrollTop = this.logElement.scrollHeight;
-            this.logBuffer = [];
-        }
-    }
-
-    // 로그창 초기화
-    clear() {
-        this.logElement.innerHTML = "";
-        this.logBuffer = [];
-    }
-}
-
-// [시각효과] 데미지 숫자, 상태이상 아이콘 등 시각 효과를 관리하는 매니저
-class VisualEffectManager {
-    constructor() {
-        this.effects = []; // 화면에 표시될 모든 시각 효과 목록
-    }
-
-    // 데미지/힐 숫자 팝업 효과 추가
-    addPopup(text, target, color = 'white') {
-        const effect = {
-            id: (Math.random() + 1).toString(36).substring(7),
-            text,
-            color,
-            x: target.x * CELL_SIZE + CELL_SIZE / 2,
-            y: target.y * CELL_SIZE,
-            duration: 60, // 60프레임 (약 1초) 동안 표시
-        };
-        this.effects.push(effect);
-    }
-
-    // 모든 시각 효과를 화면에 그림
-    draw(ctx) {
-        this.effects = this.effects.filter(effect => {
-            // 효과 그리기
-            ctx.fillStyle = effect.color;
-            ctx.font = 'bold 16px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillText(effect.text, effect.x, effect.y);
-
-            // 효과 상태 업데이트
-            effect.y -= 0.5; // 위로 떠오르는 효과
-            effect.duration--;
-
-            return effect.duration > 0; // 지속시간이 끝나면 목록에서 제거
-        });
-    }
-
-    // 유닛 머리 위에 상태이상 아이콘 그리기
-    drawStatusIcons(ctx, unit) {
-        const statuses = Object.keys(unit.statusEffects);
-        if (statuses.length === 0) return;
-
-        const startX = unit.x * CELL_SIZE + (CELL_SIZE - statuses.length * 12) / 2;
-        statuses.forEach((statusName, i) => {
-            const icon = this.getStatusIcon(statusName);
-            ctx.font = '12px sans-serif';
-            ctx.fillText(icon, startX + i * 12, unit.y * CELL_SIZE - 10);
-        });
-    }
-
-    getStatusIcon(statusName) {
-        switch(statusName) {
-            case 'paralysis': return '⚡';
-            case 'confusion': return '😵';
-            case 'poison': return '☠️';
-            default: return '❓';
-        }
-    }
-}
 
 const logManager = new BattleLogManager(document.getElementById('log'));
 // [시각효과] 전역에서 사용될 비주얼 이펙트 매니저 인스턴스
 const vfxManager = new VisualEffectManager();
 
-// [총괄 매니저] 전투 외부 요인을 반영하는 총괄 매니저
-const battleMaster = {
-    prepareBattle: (units, context) => {
-        logManager.add(`--- [${context.terrain}] 지형, [${context.weather}] 날씨에서 전투 시작! ---`);
-        units.forEach(unit => {
-            // 지형 효과 적용
-            if (context.terrain === '숲' && unit.classType === 'Archer') {
-                unit.contextualBonus.attack += 5;
-                logManager.add(`🏹 숲 지형 효과로 ${unit.name}의 공격력이 5 증가합니다.`);
-            }
-            // 날씨 효과 적용
-            if (context.weather === '비' && unit.elementalType === 'fire') {
-                unit.contextualBonus.attack -= 5;
-                logManager.add(`💧 비 날씨 효과로 화염 속성 ${unit.name}의 공격력이 5 감소합니다.`);
-            }
-            // 그 외 영지 버프, 음식 버프 등 모든 외부 요인을 이곳에서 처리
-        });
-    }
-};
 
 // [총괄 매니저] 이번 전투에 적용될 외부 요인 (임시 데이터)
 const battleContext = {
@@ -132,85 +31,6 @@ const battleContext = {
     enemyBuffs: [{ type: 'stage_effect', effect: 'all_stats_up', value: 5 }]
 };
 
-// [트리거 시스템] 게임 내 모든 이벤트를 관장하는 방송국
-class EventManager {
-    constructor() {
-        this.listeners = {}; // { 'unitDeath': [callback1, callback2], 'turnStart': [cb1] }
-    }
-
-    // 특정 이벤트 구독 (리스너 등록)
-    subscribe(eventName, callback) {
-        if (!this.listeners[eventName]) {
-            this.listeners[eventName] = [];
-        }
-        this.listeners[eventName].push(callback);
-    }
-
-    // 이벤트 발생 방송 (모든 구독자에게 알림)
-    publish(eventName, payload) {
-        if (!this.listeners[eventName]) {
-            return;
-        }
-        this.listeners[eventName].forEach(callback => {
-            callback(payload); // 이벤트 관련 데이터(payload)를 전달
-        });
-    }
-}
-
-// [구조개선] 상태이상을 통합 관리하는 중앙 관리자
-class StatusEffectManager {
-    constructor() {
-        // 전투 전체의 모든 활성 상태이상을 여기에서 관리합니다.
-        this.activeEffects = [];
-    }
-
-    // 새로운 상태이상을 관리자에 등록
-    register(caster, target, skill) {
-        const effect = {
-            id: (Math.random() + 1).toString(36).substring(7),
-            caster,
-            target,
-            name: skill.debuff,
-            duration: skill.duration || 1,
-            details: skill.details || {},
-            skill,
-        };
-        this.activeEffects.push(effect);
-        target.statusEffects[effect.name] = effect; // 유닛은 빠른 조회를 위해 참조만 가짐
-        logManager.add(`${target.name}(이)가 [${effect.name}] 효과를 얻었습니다! (${effect.duration}턴 지속)`);
-    }
-
-    // 상태이상 제거
-    remove(target, statusName) {
-        if (target.hasStatus && target.hasStatus(statusName)) {
-            this.activeEffects = this.activeEffects.filter(e => !(e.target === target && e.name === statusName));
-            delete target.statusEffects[statusName];
-            logManager.add(`${target.name}의 [${statusName}] 효과가 사라졌습니다.`);
-        }
-    }
-    
-    // 턴 종료 시, 모든 효과를 한번에 처리
-    updateTurn() {
-        logManager.add("--- 상태이상 효과 정리 시작 ---");
-        // 도트 데미지 및 힐 적용
-        this.activeEffects.forEach(effect => {
-            if (effect.name === 'poison' && !effect.target.isDead) {
-                logManager.add(`☠️ ${effect.target.name}(이)가 독 데미지로 ${effect.details.damage} 피해!`);
-                effect.target.takeDamage(effect.details.damage);
-            }
-        });
-
-        // 지속시간 감소 및 만료된 효과 제거
-        this.activeEffects = this.activeEffects.filter(effect => {
-            effect.duration--;
-            if (effect.duration <= 0) {
-                delete effect.target.statusEffects[effect.name];
-                return false; // 배열에서 제거
-            }
-            return true; // 유지
-        });
-    }
-}
 const statusEffectManager = new StatusEffectManager(logManager);
 const eventManager = new EventManager();
 

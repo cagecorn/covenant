@@ -1,7 +1,13 @@
 // [메인 파일]
 // 이 파일은 게임의 핵심 실행 로직을 담당합니다.
 
-import { BattleLogManager, VisualEffectManager, EventManager, StatusEffectManager, battleMaster } from './managers.js';
+import {
+    BattleLogManager,
+    VisualEffectManager,
+    EventManager,
+    StatusEffectManager,
+    battleMaster,
+} from './managers/index.js';
 import { CombatManager } from './combatManager.js';
 
 // --- 전역 변수 및 UI 요소 ---
