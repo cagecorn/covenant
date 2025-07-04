@@ -8,9 +8,13 @@ export class AiManager {
                 if (unit.hasStatus('flee')) {
                     return this.strategies.flee(unit, enemies, allies);
                 }
+
                 const target = unit.findBestTarget(enemies);
                 if (target) {
-                    unit.moveTowards(target, true);
+                    if (!unit.isInRange(target)) {
+                        unit.moveTowards(target, true);
+                    }
+
                     if (unit.isInRange(target)) {
                         unit.attemptSkillOrAttack(target);
                     }
@@ -39,11 +43,14 @@ export class AiManager {
                     return this.strategies.flee(unit, enemies, allies);
                 }
                 const priorityClasses = ['Archer', 'Mage', 'Healer'];
-                let priorityTargets = enemies.filter(e => priorityClasses.includes(e.classType));
+                const priorityTargets = enemies.filter(e => priorityClasses.includes(e.classType));
                 let target = unit.findBestTarget(priorityTargets);
                 if (!target) target = unit.findBestTarget(enemies);
                 if (target) {
-                    unit.moveTowards(target, true);
+                    if (!unit.isInRange(target)) {
+                        unit.moveTowards(target, true);
+                    }
+
                     if (unit.isInRange(target)) {
                         unit.attemptSkillOrAttack(target);
                     }
