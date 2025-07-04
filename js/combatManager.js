@@ -103,6 +103,7 @@ export class CombatManager {
             const enemies = unit.team === 'player' ? this.enemyUnits.filter(u => !u.isDead) : this.playerUnits.filter(u => !u.isDead);
             const allies = unit.team === 'player' ? this.playerUnits.filter(u => !u.isDead) : this.enemyUnits.filter(u => !u.isDead);
             unit.takeTurn(enemies, allies);
+            this.managers.logManager.flush();
             await this.sleep(100);
         }
 
