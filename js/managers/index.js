@@ -5,3 +5,4 @@ export { StatusEffectManager } from './StatusEffectManager.js';
 export { battleMaster } from './BattleMaster.js';
 export { AiManager } from './AiManager.js';
 export { MetaAiManager } from './MetaAiManager.js';
+export { SimulationManager } from './SimulationManager.js';
