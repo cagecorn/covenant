@@ -1,6 +1,11 @@
 export class VisualEffectManager {
-    constructor() {
+    constructor(cellSize = 50) {
         this.effects = [];
+        this.cellSize = cellSize;
+    }
+
+    setCellSize(cellSize) {
+        this.cellSize = cellSize;
     }
 
     addPopup(text, target, color = 'white') {
@@ -8,8 +13,8 @@ export class VisualEffectManager {
             id: (Math.random() + 1).toString(36).substring(7),
             text,
             color,
-            x: target.x * 50 + 25,
-            y: target.y * 50,
+            x: target.x * this.cellSize + this.cellSize / 2,
+            y: target.y * this.cellSize,
             duration: 60,
         });
     }
@@ -29,11 +34,11 @@ export class VisualEffectManager {
     drawStatusIcons(ctx, unit) {
         const statuses = Object.keys(unit.statusEffects);
         if (statuses.length === 0) return;
-        const startX = unit.x * 50 + (50 - statuses.length * 12) / 2;
+        const startX = unit.x * this.cellSize + (this.cellSize - statuses.length * 12) / 2;
         statuses.forEach((statusName, i) => {
             const icon = this.getStatusIcon(statusName);
             ctx.font = '12px sans-serif';
-            ctx.fillText(icon, startX + i * 12, unit.y * 50 - 10);
+            ctx.fillText(icon, startX + i * 12, unit.y * this.cellSize - 10);
         });
     }
 

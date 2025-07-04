@@ -33,6 +33,7 @@ const allManagers = { logManager, vfxManager, eventManager, statusEffectManager,
 const uiControls = { startBtn };
 
 const simulationManager = new SimulationManager(allManagers, uiControls);
+vfxManager.setCellSize(simulationManager.CELL_SIZE);
 
 window.onload = () => {
     simulationManager.init();
