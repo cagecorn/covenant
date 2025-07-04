@@ -9,7 +9,7 @@ import { battleMaster } from './managers/BattleMaster.js';
 
 const canvas = document.getElementById('gameCanvas'), ctx = canvas.getContext('2d');
 const startBtn = document.getElementById('startBtn'), logElement = document.getElementById('log');
-const GRID_COLS = 15, GRID_ROWS = 10, CELL_SIZE = 50;
+const GRID_COLS = 15, GRID_ROWS = 10, CELL_SIZE = 192;
 const backgroundCanvas = document.createElement('canvas');
 backgroundCanvas.width = canvas.width;
 backgroundCanvas.height = canvas.height;

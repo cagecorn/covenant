@@ -22,9 +22,9 @@ export const UNIT_TEMPLATES = {
 
 
 export const CLASS_STATS = {
-    Warrior:  { range: 1, moveSpeed: 3, icon: '⚔️' },
-    Cavalry:  { range: 2, moveSpeed: 5, icon: '🐎' },
-    Archer:   { range: 4, moveSpeed: 3, icon: '🏹' },
-    Mage:     { range: 3, moveSpeed: 2, icon: '🔮' },
-    Healer:   { range: 3, moveSpeed: 3, icon: '💖' }
+    Warrior:  { range: 1, moveSpeed: 3, icon: '⚔️', image: 'assets/images/warrior.png' },
+    Cavalry:  { range: 2, moveSpeed: 5, icon: '🐎', image: 'assets/images/paladin.png' },
+    Archer:   { range: 4, moveSpeed: 3, icon: '🏹', image: 'assets/images/archer.png' },
+    Mage:     { range: 3, moveSpeed: 2, icon: '🔮', image: 'assets/images/wizard.png' },
+    Healer:   { range: 3, moveSpeed: 3, icon: '💖', image: 'assets/images/healer.png' }
 };
