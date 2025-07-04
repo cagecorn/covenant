@@ -186,6 +186,9 @@ export class Unit {
 
             if (bestNextX === this.x && bestNextY === this.y) break;
             
+            if (this.managers && this.managers.animationManager) {
+                this.managers.animationManager.queueMovement(this, this.x, this.y, bestNextX, bestNextY);
+            }
             this.x = bestNextX;
             this.y = bestNextY;
             moved++;
@@ -201,6 +204,9 @@ export class Unit {
             if (this.x + moveX < 0 || this.x + moveX >= 15) moveX = 0;
             if (this.y + moveY < 0 || this.y + moveY >= 10) moveY = 0;
             if (moveX === 0 && moveY === 0) break;
+            if (this.managers && this.managers.animationManager) {
+                this.managers.animationManager.queueMovement(this, this.x, this.y, this.x + moveX, this.y + moveY);
+            }
             this.x += moveX;
             this.y += moveY;
             moved++;

@@ -6,3 +6,5 @@ export { battleMaster } from './BattleMaster.js';
 export { AiManager } from './AiManager.js';
 export { MetaAiManager } from './MetaAiManager.js';
 export { SimulationManager } from './SimulationManager.js';
+export { DelayManager } from './DelayManager.js';
+export { AnimationManager } from './AnimationManager.js';
