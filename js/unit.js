@@ -13,6 +13,8 @@ export class Unit {
         this.maxHp = this.hp;
         this.skills = template.skills || [];
         Object.assign(this, CLASS_STATS[this.classType]);
+        this.image = CLASS_STATS[this.classType].image;
+        this.sprite = null;
         this.isDead = false; this.hasActed = false;
         this.shield = this.valor * 2; this.maxShield = this.shield;
         this.bonusAttack = 0;
