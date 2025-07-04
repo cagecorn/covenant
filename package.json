@@ -1,0 +1,16 @@
+{
+  "name": "covenant",
+  "version": "1.0.0",
+  "description": "🎯 게임 아이디어 로드맵 (v0.1) 💡 개요 장르: 턴제 자동 전투 RPG (영지 경영 + 가챠 기반 용병 수집 + 전략 배치)",
+  "type": "module",
+  "scripts": {
+    "test": "mocha"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "chai": "^5.2.0",
+    "mocha": "^11.7.1"
+  }
+}

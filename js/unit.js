@@ -2,7 +2,8 @@
 // 이 파일은 Unit 클래스만을 정의합니다.
 
 // [수정] main.js로부터의 잘못된 import를 모두 제거합니다.
-import { AI_STRATEGIES, CLASS_STATS, SKILLS } from './data.js';
+import { CLASS_STATS } from './data.js';
+import { SKILLS } from '../src/data/skills.js';
 
 export class Unit {
     constructor(template, team, x, y, managers) {
@@ -17,7 +18,7 @@ export class Unit {
         this.bonusAttack = 0;
         this.elementalType = template.elementalType || 'none';
         this.contextualBonus = { attack: 0, defense: 0, hp: 0 };
-        this.ai = AI_STRATEGIES[template.ai];
+        this.ai = managers.aiManager.getStrategy(template.ai);
         this.statusEffects = {};
         
         // [핵심] 생성 시 주입받은 매니저들을 자신의 속성으로 저장합니다.

@@ -7,6 +7,8 @@ import {
     EventManager,
     StatusEffectManager,
     battleMaster,
+    AiManager,
+    MetaAiManager,
 } from './managers/index.js';
 import { CombatManager } from './combatManager.js';
 
@@ -21,8 +23,10 @@ const logManager = new BattleLogManager(document.getElementById('log'));
 const vfxManager = new VisualEffectManager();
 const eventManager = new EventManager();
 const statusEffectManager = new StatusEffectManager(logManager);
+const metaAiManager = new MetaAiManager();
+const aiManager = new AiManager(metaAiManager);
 
-const allManagers = { logManager, vfxManager, eventManager, statusEffectManager, battleMaster };
+const allManagers = { logManager, vfxManager, eventManager, statusEffectManager, battleMaster, aiManager, metaAiManager };
 const uiControls = { startBtn };
 
 // --- CombatManager 인스턴스 생성 ---
