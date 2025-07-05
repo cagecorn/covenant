@@ -52,6 +52,12 @@ const uiControls = { startBtn };
 const simulationManager = new SimulationManager(allManagers, uiControls);
 vfxManager.setCellSize(simulationManager.CELL_SIZE);
 
-window.onload = () => {
+function start() {
     simulationManager.init();
-};
+}
+
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    start();
+} else {
+    window.addEventListener('DOMContentLoaded', start);
+}
