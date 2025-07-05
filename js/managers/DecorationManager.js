@@ -11,7 +11,8 @@ export class DecorationManager {
         : 'assets/images/red-flag.png';
     const offsetX = -this.cellSize * 0.45;
     const offsetY = -this.cellSize * 0.25;
-    await this.bindingManager.bindImage(unit, flagPath, offsetX, offsetY, true);
+    const size = this.cellSize / 1.5; // shrink flag to roughly quarter original
+    await this.bindingManager.bindImage(unit, flagPath, offsetX, offsetY, true, size, size);
   }
 
   async applyDefaultDecorations(units) {

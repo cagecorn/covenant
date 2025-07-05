@@ -54,7 +54,9 @@ export class SimulationManager {
 
             const bindings = this.bindingManager ? this.bindingManager.getBindings(unit) : [];
             bindings.filter(b => b.behind).forEach(b => {
-                ctx.drawImage(b.img, topLeftX + b.offsetX, topLeftY + b.offsetY);
+                const w = b.width || b.img.width;
+                const h = b.height || b.img.height;
+                ctx.drawImage(b.img, topLeftX + b.offsetX, topLeftY + b.offsetY, w, h);
             });
 
             if (unit.sprite) {
@@ -75,7 +77,9 @@ export class SimulationManager {
             }
 
             bindings.filter(b => !b.behind).forEach(b => {
-                ctx.drawImage(b.img, topLeftX + b.offsetX, topLeftY + b.offsetY);
+                const w = b.width || b.img.width;
+                const h = b.height || b.img.height;
+                ctx.drawImage(b.img, topLeftX + b.offsetX, topLeftY + b.offsetY, w, h);
             });
 
             ctx.fillStyle = unit.team === 'player' ? '#3498db' : '#e74c3c';
