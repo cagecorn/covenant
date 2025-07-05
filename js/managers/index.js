@@ -10,3 +10,8 @@ export { DelayManager } from './DelayManager.js';
 export { AnimationManager } from './AnimationManager.js';
 export { ImageManager } from './ImageManager.js';
 export { LayerManager } from './LayerManager.js';
+<<<<<<< codex/배틀-스테이지-배경-이미지-크기-조정
+export { BindingManager } from './BindingManager.js';
+export { BackgroundManager } from './BackgroundManager.js';
+=======
+>>>>>>> main
