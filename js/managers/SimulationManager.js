@@ -50,103 +50,113 @@ export class SimulationManager {
         }
     }
 
-    drawUnits(units) {
-        const ctx = this.unitCtx;
-        // Y좌표 기준으로 유닛들을 정렬합니다 (y가 작은 순서대로).
-        const sorted = units
-            .filter(u => !u.isDead)
-            .sort((a, b) => a.y - b.y);
+    drawUnit(unit, ctx) {
+        if (unit.isDead) return;
 
-        sorted.forEach(unit => {
-            const drawX = (unit.renderX ?? unit.x) * this.CELL_SIZE + this.CELL_SIZE / 2;
-            const drawY = (unit.renderY ?? unit.y) * this.CELL_SIZE + this.CELL_SIZE - 24;
-            const spriteHeight = this.CELL_SIZE * 2;
-            const topLeftX = drawX - this.CELL_SIZE;
-            const topLeftY = drawY - spriteHeight;
+        const drawX = (unit.renderX ?? unit.x) * this.CELL_SIZE + this.CELL_SIZE / 2;
+        const drawY = (unit.renderY ?? unit.y) * this.CELL_SIZE + this.CELL_SIZE - 24;
+        const spriteHeight = this.CELL_SIZE * 2;
+        const topLeftX = drawX - this.CELL_SIZE;
+        const topLeftY = drawY - spriteHeight;
 
-            const bindings = this.bindingManager ? this.bindingManager.getBindings(unit) : [];
-            bindings.filter(b => b.behind).forEach(b => {
-                const w = b.width || b.img.width;
-                const h = b.height || b.img.height;
-                ctx.drawImage(b.img, topLeftX + b.offsetX, topLeftY + b.offsetY, w, h);
-            });
+        const bindings = this.bindingManager ? this.bindingManager.getBindings(unit) : [];
+        bindings.filter(b => b.behind).forEach(b => {
+            const w = b.width || b.img.width;
+            const h = b.height || b.img.height;
+            ctx.drawImage(b.img, topLeftX + b.offsetX, topLeftY + b.offsetY, w, h);
+        });
 
-            if (unit.sprite) {
-                // --- \uD83C\uDFA8 \uADF8\uB9B0\uC790 \uADF8\uB9B0\uAE30 \uC2DC\uC791 ---
+        if (unit.sprite) {
+            // --- 그림자 그리기 시작 ---
+            ctx.save();
+            ctx.translate(drawX, drawY);
+            ctx.transform(1, 0, -0.5, 0.5, 0, 0);
+            if (unit.team === 'enemy') {
+                ctx.scale(-1, 1);
+            }
+            ctx.globalAlpha = 0.6;
+            ctx.drawImage(unit.sprite, -this.CELL_SIZE, -spriteHeight, this.CELL_SIZE * 2, spriteHeight);
+            ctx.globalCompositeOperation = 'source-in';
+            ctx.fillStyle = 'black';
+            ctx.fillRect(-this.CELL_SIZE, -spriteHeight, this.CELL_SIZE * 2, spriteHeight);
+            ctx.restore();
+            // --- 그림자 그리기 종료 ---
+
+            if (unit.team === 'enemy') {
                 ctx.save();
                 ctx.translate(drawX, drawY);
-                ctx.transform(1, 0, -0.5, 0.5, 0, 0);
-                if (unit.team === 'enemy') {
-                    ctx.scale(-1, 1);
-                }
-                ctx.globalAlpha = 0.6;
+                ctx.scale(-1, 1);
                 ctx.drawImage(unit.sprite, -this.CELL_SIZE, -spriteHeight, this.CELL_SIZE * 2, spriteHeight);
-                ctx.globalCompositeOperation = 'source-in';
-                ctx.fillStyle = 'black';
-                ctx.fillRect(-this.CELL_SIZE, -spriteHeight, this.CELL_SIZE * 2, spriteHeight);
                 ctx.restore();
-                // --- \uADF8\uB9B0\uC790 \uADF8\uB9B0\uAE30 \uC885\uB8CC ---
-
-                if (unit.team === 'enemy') {
-                    ctx.save();
-                    ctx.translate(drawX, drawY);
-                    ctx.scale(-1, 1);
-                    ctx.drawImage(unit.sprite, -this.CELL_SIZE, -spriteHeight, this.CELL_SIZE * 2, spriteHeight);
-                    ctx.restore();
-                } else {
-                    ctx.drawImage(unit.sprite, drawX - this.CELL_SIZE, drawY - spriteHeight, this.CELL_SIZE * 2, spriteHeight);
-                }
             } else {
-                ctx.font = '24px sans-serif';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText(unit.icon, drawX, drawY);
+                ctx.drawImage(unit.sprite, drawX - this.CELL_SIZE, drawY - spriteHeight, this.CELL_SIZE * 2, spriteHeight);
             }
+        } else {
+            ctx.font = '24px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(unit.icon, drawX, drawY);
+        }
 
-            bindings.filter(b => !b.behind).forEach(b => {
-                const w = b.width || b.img.width;
-                const h = b.height || b.img.height;
-                ctx.drawImage(b.img, topLeftX + b.offsetX, topLeftY + b.offsetY, w, h);
-            });
-
-            ctx.fillStyle = unit.team === 'player' ? '#3498db' : '#e74c3c';
-            ctx.beginPath();
-            ctx.arc(drawX, drawY + 15, 5, 0, 2 * Math.PI);
-            ctx.fill();
-
-            const barWidth = this.CELL_SIZE * 0.8;
-            const barYOffset = drawY - spriteHeight + 10;
-            const hpRatio = unit.hp / unit.maxHp;
-
-            ctx.fillStyle = '#555';
-            ctx.fillRect(drawX - barWidth / 2, barYOffset, barWidth, 5);
-            ctx.fillStyle = 'green';
-            ctx.fillRect(drawX - barWidth / 2, barYOffset, barWidth * hpRatio, 5);
-
-            if (unit.maxShield > 0) {
-                const shieldRatio = unit.shield / unit.maxShield;
-                ctx.fillStyle = '#555';
-                ctx.fillRect(drawX - barWidth / 2, barYOffset - 6, barWidth, 5);
-                ctx.fillStyle = 'cyan';
-                ctx.fillRect(drawX - barWidth / 2, barYOffset - 6, barWidth * shieldRatio, 5);
-            }
-
-            this.combatManager.managers.vfxManager.drawStatusIcons(ctx, unit);
+        bindings.filter(b => !b.behind).forEach(b => {
+            const w = b.width || b.img.width;
+            const h = b.height || b.img.height;
+            ctx.drawImage(b.img, topLeftX + b.offsetX, topLeftY + b.offsetY, w, h);
         });
+
+        ctx.fillStyle = unit.team === 'player' ? '#3498db' : '#e74c3c';
+        ctx.beginPath();
+        ctx.arc(drawX, drawY + 15, 5, 0, 2 * Math.PI);
+        ctx.fill();
+
+        const barWidth = this.CELL_SIZE * 0.8;
+        const barYOffset = drawY - spriteHeight + 10;
+        const hpRatio = unit.hp / unit.maxHp;
+
+        ctx.fillStyle = '#555';
+        ctx.fillRect(drawX - barWidth / 2, barYOffset, barWidth, 5);
+        ctx.fillStyle = 'green';
+        ctx.fillRect(drawX - barWidth / 2, barYOffset, barWidth * hpRatio, 5);
+
+        if (unit.maxShield > 0) {
+            const shieldRatio = unit.shield / unit.maxShield;
+            ctx.fillStyle = '#555';
+            ctx.fillRect(drawX - barWidth / 2, barYOffset - 6, barWidth, 5);
+            ctx.fillStyle = 'cyan';
+            ctx.fillRect(drawX - barWidth / 2, barYOffset - 6, barWidth * shieldRatio, 5);
+        }
+
+        this.combatManager.managers.vfxManager.drawStatusIcons(ctx, unit);
     }
 
     render(units) {
+        // 1. 유닛 레이어를 깨끗하게 지웁니다.
         this.unitCtx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
         if (units) {
-            this.drawUnits(units);
+            // 2. Y좌표를 기준으로 유닛을 정렬합니다. (y가 작은 유닛부터 그려야 자연스럽습니다)
+            const sorted = units.slice().sort((a, b) => a.y - b.y);
+
+            // 3. 정렬된 유닛을 하나씩 `unitCtx`에 그립니다.
+            sorted.forEach(unit => {
+                this.drawUnit(unit, this.unitCtx);
+            });
         }
+
+        // 4. 메인 캔버스를 지웁니다.
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         this.ctx.save();
+
+        // 5. 화면 이동 및 확대/축소를 적용합니다.
         if (this.inputManager) {
             this.ctx.translate(this.inputManager.offsetX, this.inputManager.offsetY);
             this.ctx.scale(this.inputManager.scale, this.inputManager.scale);
         }
+        
+        // 6. 모든 레이어(배경, 유닛)를 메인 캔버스에 그립니다.
         this.layerManager.draw(this.ctx);
+        
+        // 7. 시각 효과(데미지 숫자 등)를 그립니다.
         this.combatManager.managers.vfxManager.draw(this.ctx);
         this.ctx.restore();
     }
