@@ -36,50 +36,44 @@ export class SimulationManager {
     }
 
     drawUnits(units) {
-        const sorted = [...units].sort((a, b) => ((a.renderY ?? a.y) - (b.renderY ?? b.y)));
-        sorted.forEach(unit => {
+        units.forEach(unit => {
             if (unit.isDead) return;
-            const baseX = (unit.renderX ?? unit.x) * this.CELL_SIZE + this.CELL_SIZE / 2;
-            const baseY = (unit.renderY ?? unit.y + 1) * this.CELL_SIZE;
-            const centerY = baseY - this.CELL_SIZE / 2;
-
+            const drawX = (unit.renderX ?? unit.x) * this.CELL_SIZE + this.CELL_SIZE / 2;
+            const drawY = (unit.renderY ?? unit.y) * this.CELL_SIZE + this.CELL_SIZE / 2;
             if (unit.sprite) {
                 if (unit.team === 'enemy') {
                     this.ctx.save();
-                    this.ctx.translate(baseX, baseY);
+                    this.ctx.translate(drawX, drawY);
                     this.ctx.scale(-1, 1);
-                    this.ctx.drawImage(unit.sprite, -this.CELL_SIZE / 2, -this.CELL_SIZE, this.CELL_SIZE, this.CELL_SIZE);
+                    this.ctx.drawImage(unit.sprite, -this.CELL_SIZE / 2, -this.CELL_SIZE / 2, this.CELL_SIZE, this.CELL_SIZE);
                     this.ctx.restore();
                 } else {
-                    this.ctx.drawImage(unit.sprite, baseX - this.CELL_SIZE / 2, baseY - this.CELL_SIZE, this.CELL_SIZE, this.CELL_SIZE);
+                    this.ctx.drawImage(unit.sprite, drawX - this.CELL_SIZE / 2, drawY - this.CELL_SIZE / 2, this.CELL_SIZE, this.CELL_SIZE);
                 }
             } else {
                 this.ctx.font = '24px sans-serif';
                 this.ctx.textAlign = 'center';
                 this.ctx.textBaseline = 'middle';
-                this.ctx.fillText(unit.icon, baseX, centerY);
+                this.ctx.fillText(unit.icon, drawX, drawY);
             }
-
             this.ctx.fillStyle = unit.team === 'player' ? '#3498db' : '#e74c3c';
             this.ctx.beginPath();
-            this.ctx.arc(baseX, centerY + 15, 5, 0, 2 * Math.PI);
+            this.ctx.arc(drawX, drawY + 15, 5, 0, 2 * Math.PI);
             this.ctx.fill();
-
             const barWidth = this.CELL_SIZE * 0.8;
             const hpRatio = unit.hp / unit.maxHp;
             this.ctx.fillStyle = '#555';
-            this.ctx.fillRect(baseX - barWidth / 2, centerY - 20, barWidth, 5);
+            this.ctx.fillRect(drawX - barWidth / 2, drawY - 20, barWidth, 5);
             this.ctx.fillStyle = 'green';
-            this.ctx.fillRect(baseX - barWidth / 2, centerY - 20, barWidth * hpRatio, 5);
+            this.ctx.fillRect(drawX - barWidth / 2, drawY - 20, barWidth * hpRatio, 5);
             if (unit.maxShield > 0) {
                 const shieldRatio = unit.shield / unit.maxShield;
                 this.ctx.fillStyle = '#555';
-                this.ctx.fillRect(baseX - barWidth / 2, centerY - 26, barWidth, 5);
+                this.ctx.fillRect(drawX - barWidth / 2, drawY - 26, barWidth, 5);
                 this.ctx.fillStyle = 'cyan';
-                this.ctx.fillRect(baseX - barWidth / 2, centerY - 26, barWidth * shieldRatio, 5);
+                this.ctx.fillRect(drawX - barWidth / 2, drawY - 26, barWidth * shieldRatio, 5);
             }
-
-            this.combatManager.managers.vfxManager.drawStatusIcons(this.ctx, unit, baseX, centerY);
+            this.combatManager.managers.vfxManager.drawStatusIcons(this.ctx, unit);
         });
     }
 
