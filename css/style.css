@@ -23,6 +23,8 @@ canvas {
     border: 3px solid #7f8c8d;
     border-radius: 10px;
     display: block; /* wrapper를 꽉 채우도록 표시 */
+    width: 100%;
+    height: auto;
 
     /* 이미지를 확대/축소하더라도 픽셀이 선명하게 보이도록 설정 */
     image-rendering: -moz-crisp-edges;    /* Firefox */
