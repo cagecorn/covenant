@@ -157,11 +157,24 @@ export class SimulationManager {
         return Promise.all(promises);
     }
 
+    autoFit() {
+        if (!this.inputManager) return;
+        const maxWidth = window.innerWidth;
+        const maxHeight = window.innerHeight;
+        const scaleX = maxWidth / (this.CELL_SIZE * this.GRID_COLS);
+        const scaleY = maxHeight / (this.CELL_SIZE * this.GRID_ROWS);
+        const scale = Math.min(scaleX, scaleY, 1);
+        this.inputManager.scale = scale;
+        this.inputManager.offsetX = (maxWidth - this.canvas.width * scale) / 2;
+        this.inputManager.offsetY = (maxHeight - this.canvas.height * scale) / 2;
+    }
+
     async init() {
         await this.backgroundManager.load('assets/images/battle-stage-forest.png');
         this.preRenderGrid();
         this.combatManager.init();
         await this.loadUnitSprites();
+        this.autoFit();
         this.render(this.combatManager.allUnits);
         this.startBtn.addEventListener('click', async () => {
             await this.combatManager.startSimulation(units => this.render(units));
