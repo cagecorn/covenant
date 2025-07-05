@@ -36,19 +36,27 @@ export class SimulationManager {
     }
 
     drawUnits(units) {
-        units.forEach(unit => {
-            if (unit.isDead) return;
+        // Sort units by their y-coordinate so units lower on the screen are drawn last
+        const sorted = units
+            .filter(u => !u.isDead)
+            .sort((a, b) => a.y - b.y);
+
+        sorted.forEach(unit => {
             const drawX = (unit.renderX ?? unit.x) * this.CELL_SIZE + this.CELL_SIZE / 2;
-            const drawY = (unit.renderY ?? unit.y) * this.CELL_SIZE + this.CELL_SIZE / 2;
+            // drawY is aligned with the bottom of the tile so the sprite's feet sit on the ground
+            const drawY = (unit.renderY ?? unit.y) * this.CELL_SIZE + this.CELL_SIZE - 24;
+
             if (unit.sprite) {
+                const spriteHeight = this.CELL_SIZE;
+
                 if (unit.team === 'enemy') {
                     this.ctx.save();
                     this.ctx.translate(drawX, drawY);
                     this.ctx.scale(-1, 1);
-                    this.ctx.drawImage(unit.sprite, -this.CELL_SIZE / 2, -this.CELL_SIZE / 2, this.CELL_SIZE, this.CELL_SIZE);
+                    this.ctx.drawImage(unit.sprite, -this.CELL_SIZE / 2, -spriteHeight, this.CELL_SIZE, spriteHeight);
                     this.ctx.restore();
                 } else {
-                    this.ctx.drawImage(unit.sprite, drawX - this.CELL_SIZE / 2, drawY - this.CELL_SIZE / 2, this.CELL_SIZE, this.CELL_SIZE);
+                    this.ctx.drawImage(unit.sprite, drawX - this.CELL_SIZE / 2, drawY - spriteHeight, this.CELL_SIZE, spriteHeight);
                 }
             } else {
                 this.ctx.font = '24px sans-serif';
@@ -56,23 +64,30 @@ export class SimulationManager {
                 this.ctx.textBaseline = 'middle';
                 this.ctx.fillText(unit.icon, drawX, drawY);
             }
+
             this.ctx.fillStyle = unit.team === 'player' ? '#3498db' : '#e74c3c';
             this.ctx.beginPath();
             this.ctx.arc(drawX, drawY + 15, 5, 0, 2 * Math.PI);
             this.ctx.fill();
+
+            // reposition the HP bar relative to the new drawY value
             const barWidth = this.CELL_SIZE * 0.8;
+            const barYOffset = drawY - this.CELL_SIZE + 10;
             const hpRatio = unit.hp / unit.maxHp;
+
             this.ctx.fillStyle = '#555';
-            this.ctx.fillRect(drawX - barWidth / 2, drawY - 20, barWidth, 5);
+            this.ctx.fillRect(drawX - barWidth / 2, barYOffset, barWidth, 5);
             this.ctx.fillStyle = 'green';
-            this.ctx.fillRect(drawX - barWidth / 2, drawY - 20, barWidth * hpRatio, 5);
+            this.ctx.fillRect(drawX - barWidth / 2, barYOffset, barWidth * hpRatio, 5);
+
             if (unit.maxShield > 0) {
                 const shieldRatio = unit.shield / unit.maxShield;
                 this.ctx.fillStyle = '#555';
-                this.ctx.fillRect(drawX - barWidth / 2, drawY - 26, barWidth, 5);
+                this.ctx.fillRect(drawX - barWidth / 2, barYOffset - 6, barWidth, 5);
                 this.ctx.fillStyle = 'cyan';
-                this.ctx.fillRect(drawX - barWidth / 2, drawY - 26, barWidth * shieldRatio, 5);
+                this.ctx.fillRect(drawX - barWidth / 2, barYOffset - 6, barWidth * shieldRatio, 5);
             }
+
             this.combatManager.managers.vfxManager.drawStatusIcons(this.ctx, unit);
         });
     }
