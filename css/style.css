@@ -13,18 +13,6 @@ h1 {
     text-shadow: 2px 2px 4px rgba(0,0,0,.5);
 }
 
-/*
- * Global shadow toggle
- * A recent bug in browsers causes unexpected artifacting when shadows
- * are enabled. Adding this override ensures shadows are disabled across
- * the UI until the issue is resolved.
- */
-body.no-shadow, body.no-shadow * {
-    text-shadow: none !important;
-    box-shadow: none !important;
-    filter: none !important;
-}
-
 /* 게임 화면을 감싸는 컨테이너 */
 #game-wrapper {
     display: inline-block; /* 내부 요소(canvas)의 너비에 맞춰 크기를 조정 */
