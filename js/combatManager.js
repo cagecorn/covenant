@@ -23,6 +23,9 @@ export class CombatManager {
     // 게임 초기화
     init() {
         this.managers.logManager.clear();
+        if (this.managers.bindingManager) {
+            this.managers.bindingManager.clear();
+        }
         if (this.animationFrameId) {
             cancelAnimationFrame(this.animationFrameId);
             this.animationFrameId = null;
@@ -77,6 +80,9 @@ export class CombatManager {
                 })
             );
             await Promise.all(promises);
+        }
+        if (this.managers.decorationManager) {
+            await this.managers.decorationManager.applyDefaultDecorations(this.allUnits);
         }
         this.runTurn(); // 최초 턴 실행
 

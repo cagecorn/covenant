@@ -13,6 +13,7 @@ export class SimulationManager {
         this.GRID_ROWS = 10;
 
         this.imageManager = managers.imageManager;
+        this.bindingManager = managers.bindingManager;
 
         this.layerManager = new LayerManager(this.canvas.width, this.canvas.height);
         this.backgroundManager = new BackgroundManager(this.imageManager, this.layerManager, this.canvas.width, this.canvas.height);
@@ -47,10 +48,16 @@ export class SimulationManager {
         sorted.forEach(unit => {
             const drawX = (unit.renderX ?? unit.x) * this.CELL_SIZE + this.CELL_SIZE / 2;
             const drawY = (unit.renderY ?? unit.y) * this.CELL_SIZE + this.CELL_SIZE - 24;
+            const spriteHeight = this.CELL_SIZE;
+            const topLeftX = drawX - this.CELL_SIZE / 2;
+            const topLeftY = drawY - spriteHeight;
+
+            const bindings = this.bindingManager ? this.bindingManager.getBindings(unit) : [];
+            bindings.filter(b => b.behind).forEach(b => {
+                ctx.drawImage(b.img, topLeftX + b.offsetX, topLeftY + b.offsetY);
+            });
 
             if (unit.sprite) {
-                const spriteHeight = this.CELL_SIZE;
-
                 if (unit.team === 'enemy') {
                     ctx.save();
                     ctx.translate(drawX, drawY);
@@ -66,6 +73,10 @@ export class SimulationManager {
                 ctx.textBaseline = 'middle';
                 ctx.fillText(unit.icon, drawX, drawY);
             }
+
+            bindings.filter(b => !b.behind).forEach(b => {
+                ctx.drawImage(b.img, topLeftX + b.offsetX, topLeftY + b.offsetY);
+            });
 
             ctx.fillStyle = unit.team === 'player' ? '#3498db' : '#e74c3c';
             ctx.beginPath();
