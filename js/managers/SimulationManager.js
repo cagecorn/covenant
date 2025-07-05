@@ -45,6 +45,16 @@ export class SimulationManager {
             const drawX = (unit.renderX ?? unit.x) * this.CELL_SIZE + this.CELL_SIZE / 2;
             const drawY = (unit.renderY ?? unit.y) * this.CELL_SIZE + this.CELL_SIZE - 24;
 
+            const attachments = this.combatManager.managers.bindingManager.get(unit);
+            attachments.filter(a => a.behind).forEach(att => {
+                if (!att.img) {
+                    att.img = this.imageManager.get(att.path);
+                }
+                if (att.img) {
+                    ctx.drawImage(att.img, drawX + att.offsetX, drawY + att.offsetY);
+                }
+            });
+
             if (unit.sprite) {
                 const spriteHeight = this.CELL_SIZE;
 
@@ -63,6 +73,15 @@ export class SimulationManager {
                 ctx.textBaseline = 'middle';
                 ctx.fillText(unit.icon, drawX, drawY);
             }
+
+            attachments.filter(a => !a.behind).forEach(att => {
+                if (!att.img) {
+                    att.img = this.imageManager.get(att.path);
+                }
+                if (att.img) {
+                    ctx.drawImage(att.img, drawX + att.offsetX, drawY + att.offsetY);
+                }
+            });
 
             ctx.fillStyle = unit.team === 'player' ? '#3498db' : '#e74c3c';
             ctx.beginPath();
@@ -102,7 +121,14 @@ export class SimulationManager {
 
     loadUnitSprites() {
         const units = this.combatManager.allUnits;
-        const promises = units.map(u => this.imageManager.load(u.image).then(img => { u.sprite = img; }));
+        const promises = [];
+        units.forEach(u => {
+            promises.push(this.imageManager.load(u.image).then(img => { u.sprite = img; }));
+            const attachments = this.combatManager.managers.bindingManager.get(u);
+            attachments.forEach(att => {
+                promises.push(this.imageManager.load(att.path).then(img => { att.img = img; }));
+            });
+        });
         return Promise.all(promises);
     }
 
