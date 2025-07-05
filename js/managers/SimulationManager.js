@@ -8,6 +8,8 @@ export class SimulationManager {
         this.combatManager = new CombatManager(managers, uiControls);
         this.canvas = document.getElementById('gameCanvas');
         this.ctx = this.canvas.getContext('2d');
+        // 캔버스 스케일 조정 시 이미지를 부드럽게 처리하지 않도록 설정
+        this.ctx.imageSmoothingEnabled = false;
         this.startBtn = uiControls.startBtn;
         this.CELL_SIZE = 192;
         this.GRID_COLS = 15;
@@ -20,6 +22,8 @@ export class SimulationManager {
         this.backgroundManager = new BackgroundManager(this.imageManager, this.layerManager, this.canvas.width, this.canvas.height);
         this.backgroundCtx = this.layerManager.getLayer('background');
         this.unitCtx = this.layerManager.addLayer('units');
+        this.backgroundCtx.imageSmoothingEnabled = false;
+        this.unitCtx.imageSmoothingEnabled = false;
 
         this.inputManager = inputManager || new InputManager(this.canvas);
     }
