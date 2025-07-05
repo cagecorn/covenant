@@ -13,10 +13,16 @@ h1 {
     text-shadow: 2px 2px 4px rgba(0,0,0,.5);
 }
 
+/* 게임 화면을 감싸는 컨테이너 */
+#game-wrapper {
+    display: inline-block; /* 내부 요소(canvas)의 너비에 맞춰 크기를 조정 */
+}
+
 canvas {
     background-color: #34495e;
     border: 3px solid #7f8c8d;
     border-radius: 10px;
+    display: block; /* wrapper를 꽉 채우도록 표시 */
 }
 
 #controls {
@@ -39,7 +45,8 @@ button:hover {
 }
 
 #log {
-    width: 2880px;
+    width: 100%;
+    box-sizing: border-box;
     height: 100px;
     background: rgba(0,0,0,.3);
     border-radius: 5px;
