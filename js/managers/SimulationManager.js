@@ -60,8 +60,8 @@ export class SimulationManager {
         sorted.forEach(unit => {
             const drawX = (unit.renderX ?? unit.x) * this.CELL_SIZE + this.CELL_SIZE / 2;
             const drawY = (unit.renderY ?? unit.y) * this.CELL_SIZE + this.CELL_SIZE - 24;
-            const spriteHeight = this.CELL_SIZE;
-            const topLeftX = drawX - this.CELL_SIZE / 2;
+            const spriteHeight = this.CELL_SIZE * 2;
+            const topLeftX = drawX - this.CELL_SIZE;
             const topLeftY = drawY - spriteHeight;
 
             const bindings = this.bindingManager ? this.bindingManager.getBindings(unit) : [];
@@ -80,10 +80,10 @@ export class SimulationManager {
                     ctx.scale(-1, 1);
                 }
                 ctx.globalAlpha = 0.6;
-                ctx.drawImage(unit.sprite, -this.CELL_SIZE / 2, -spriteHeight, this.CELL_SIZE, spriteHeight);
+                ctx.drawImage(unit.sprite, -this.CELL_SIZE, -spriteHeight, this.CELL_SIZE * 2, spriteHeight);
                 ctx.globalCompositeOperation = 'source-in';
                 ctx.fillStyle = 'black';
-                ctx.fillRect(-this.CELL_SIZE / 2, -spriteHeight, this.CELL_SIZE, spriteHeight);
+                ctx.fillRect(-this.CELL_SIZE, -spriteHeight, this.CELL_SIZE * 2, spriteHeight);
                 ctx.restore();
                 // --- \uADF8\uB9B0\uC790 \uADF8\uB9B0\uAE30 \uC885\uB8CC ---
 
@@ -91,10 +91,10 @@ export class SimulationManager {
                     ctx.save();
                     ctx.translate(drawX, drawY);
                     ctx.scale(-1, 1);
-                    ctx.drawImage(unit.sprite, -this.CELL_SIZE / 2, -spriteHeight, this.CELL_SIZE, spriteHeight);
+                    ctx.drawImage(unit.sprite, -this.CELL_SIZE, -spriteHeight, this.CELL_SIZE * 2, spriteHeight);
                     ctx.restore();
                 } else {
-                    ctx.drawImage(unit.sprite, drawX - this.CELL_SIZE / 2, drawY - spriteHeight, this.CELL_SIZE, spriteHeight);
+                    ctx.drawImage(unit.sprite, drawX - this.CELL_SIZE, drawY - spriteHeight, this.CELL_SIZE * 2, spriteHeight);
                 }
             } else {
                 ctx.font = '24px sans-serif';
