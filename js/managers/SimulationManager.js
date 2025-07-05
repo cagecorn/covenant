@@ -1,9 +1,10 @@
 import { CombatManager } from '../combatManager.js';
 import { LayerManager } from './LayerManager.js';
 import { BackgroundManager } from './BackgroundManager.js';
+import { InputManager } from './InputManager.js';
 
 export class SimulationManager {
-    constructor(managers, uiControls) {
+    constructor(managers, uiControls, inputManager = null) {
         this.combatManager = new CombatManager(managers, uiControls);
         this.canvas = document.getElementById('gameCanvas');
         this.ctx = this.canvas.getContext('2d');
@@ -19,6 +20,12 @@ export class SimulationManager {
         this.backgroundManager = new BackgroundManager(this.imageManager, this.layerManager, this.canvas.width, this.canvas.height);
         this.backgroundCtx = this.layerManager.getLayer('background');
         this.unitCtx = this.layerManager.addLayer('units');
+
+        this.inputManager = inputManager || new InputManager(this.canvas);
+    }
+
+    setInputManager(manager) {
+        this.inputManager = manager;
     }
 
     preRenderGrid() {
@@ -48,8 +55,8 @@ export class SimulationManager {
         sorted.forEach(unit => {
             const drawX = (unit.renderX ?? unit.x) * this.CELL_SIZE + this.CELL_SIZE / 2;
             const drawY = (unit.renderY ?? unit.y) * this.CELL_SIZE + this.CELL_SIZE - 24;
-            const spriteHeight = this.CELL_SIZE;
-            const topLeftX = drawX - this.CELL_SIZE / 2;
+            const spriteHeight = this.CELL_SIZE * 2;
+            const topLeftX = drawX - this.CELL_SIZE;
             const topLeftY = drawY - spriteHeight;
 
             const bindings = this.bindingManager ? this.bindingManager.getBindings(unit) : [];
@@ -64,10 +71,10 @@ export class SimulationManager {
                     ctx.save();
                     ctx.translate(drawX, drawY);
                     ctx.scale(-1, 1);
-                    ctx.drawImage(unit.sprite, -this.CELL_SIZE / 2, -spriteHeight, this.CELL_SIZE, spriteHeight);
+                    ctx.drawImage(unit.sprite, -this.CELL_SIZE, -spriteHeight, this.CELL_SIZE * 2, spriteHeight);
                     ctx.restore();
                 } else {
-                    ctx.drawImage(unit.sprite, drawX - this.CELL_SIZE / 2, drawY - spriteHeight, this.CELL_SIZE, spriteHeight);
+                    ctx.drawImage(unit.sprite, drawX - this.CELL_SIZE, drawY - spriteHeight, this.CELL_SIZE * 2, spriteHeight);
                 }
             } else {
                 ctx.font = '24px sans-serif';
@@ -88,7 +95,7 @@ export class SimulationManager {
             ctx.fill();
 
             const barWidth = this.CELL_SIZE * 0.8;
-            const barYOffset = drawY - this.CELL_SIZE + 10;
+            const barYOffset = drawY - spriteHeight + 10;
             const hpRatio = unit.hp / unit.maxHp;
 
             ctx.fillStyle = '#555';
@@ -114,8 +121,14 @@ export class SimulationManager {
             this.drawUnits(units);
         }
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        this.ctx.save();
+        if (this.inputManager) {
+            this.ctx.translate(this.inputManager.offsetX, this.inputManager.offsetY);
+            this.ctx.scale(this.inputManager.scale, this.inputManager.scale);
+        }
         this.layerManager.draw(this.ctx);
         this.combatManager.managers.vfxManager.draw(this.ctx);
+        this.ctx.restore();
     }
 
     loadUnitSprites() {

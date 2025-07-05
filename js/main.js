@@ -15,6 +15,7 @@ import {
     ImageManager,
     BindingManager,
     DecorationManager,
+    InputManager,
 } from './managers/index.js';
 
 // --- 전역 변수 및 UI 요소 ---
@@ -50,6 +51,8 @@ const allManagers = {
 const uiControls = { startBtn };
 
 const simulationManager = new SimulationManager(allManagers, uiControls);
+const inputManager = new InputManager(simulationManager.canvas);
+simulationManager.setInputManager(inputManager);
 vfxManager.setCellSize(simulationManager.CELL_SIZE);
 
 function start() {
