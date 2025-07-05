@@ -4,10 +4,10 @@ export class BindingManager {
     this.bindings = new Map(); // unitId -> [binding]
   }
 
-  async bindImage(unit, path, offsetX = 0, offsetY = 0, behind = true) {
+  async bindImage(unit, path, offsetX = 0, offsetY = 0, behind = true, width = null, height = null) {
     const img = await this.imageManager.load(path);
     const arr = this.bindings.get(unit.id) || [];
-    arr.push({ img, offsetX, offsetY, behind });
+    arr.push({ img, offsetX, offsetY, behind, width, height });
     this.bindings.set(unit.id, arr);
   }
 
