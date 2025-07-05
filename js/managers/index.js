@@ -11,3 +11,4 @@ export { AnimationManager } from './AnimationManager.js';
 export { ImageManager } from './ImageManager.js';
 export { LayerManager } from './LayerManager.js';
 export { BindingManager } from './BindingManager.js';
+export { BackgroundManager } from './BackgroundManager.js';
