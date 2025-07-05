@@ -4,9 +4,6 @@
 import { Unit } from './unit.js'; // 's' 제거
 import { UNIT_TEMPLATES } from './data.js';
 
-const FLAG_OFFSET_X = -86;
-const FLAG_OFFSET_Y = -20;
-
 export class CombatManager {
     constructor(managers, uiControls) {
         this.managers = managers; // log, vfx, event, statusEffect 매니저 포함
@@ -54,10 +51,6 @@ export class CombatManager {
         this.allUnits = [...this.playerUnits, ...this.enemyUnits];
 
         this.managers.battleMaster.prepareBattle(this.allUnits, this.battleContext, this.managers.logManager);
-        const bm = this.managers.bindingManager;
-        bm.clear();
-        this.playerUnits.forEach(u => bm.bind(u, 'assets/images/blue-flag.png', FLAG_OFFSET_X, FLAG_OFFSET_Y, true));
-        this.enemyUnits.forEach(u => bm.bind(u, 'assets/images/red-flag.png', FLAG_OFFSET_X, FLAG_OFFSET_Y, true));
         this.allUnits.forEach(unit => unit.registerTriggers());
 
         this.managers.logManager.add("--- 전투 시작! 패시브 스킬 발동 ---");
@@ -78,14 +71,11 @@ export class CombatManager {
         this.init();
         if (this.managers.imageManager) {
             const units = this.allUnits;
-            const promises = [];
-            units.forEach(u => {
-                promises.push(this.managers.imageManager.load(u.image).then(img => { u.sprite = img; }));
-                const attachments = this.managers.bindingManager.get(u);
-                attachments.forEach(att => {
-                    promises.push(this.managers.imageManager.load(att.path).then(img => { att.img = img; }));
-                });
-            });
+            const promises = units.map(u =>
+                this.managers.imageManager.load(u.image).then(img => {
+                    u.sprite = img;
+                })
+            );
             await Promise.all(promises);
         }
         this.runTurn(); // 최초 턴 실행

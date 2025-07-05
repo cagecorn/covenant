@@ -10,4 +10,3 @@ export { DelayManager } from './DelayManager.js';
 export { AnimationManager } from './AnimationManager.js';
 export { ImageManager } from './ImageManager.js';
 export { LayerManager } from './LayerManager.js';
-export { BindingManager } from './BindingManager.js';
