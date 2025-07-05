@@ -13,6 +13,8 @@ import {
     DelayManager,
     AnimationManager,
     ImageManager,
+    BindingManager,
+    DecorationManager,
 } from './managers/index.js';
 
 // --- 전역 변수 및 UI 요소 ---
@@ -28,8 +30,23 @@ const aiManager = new AiManager(metaAiManager);
 const delayManager = new DelayManager();
 const animationManager = new AnimationManager(delayManager);
 const imageManager = new ImageManager();
+const bindingManager = new BindingManager(imageManager);
+const decorationManager = new DecorationManager(bindingManager);
 
-const allManagers = { logManager, vfxManager, eventManager, statusEffectManager, battleMaster, aiManager, metaAiManager, delayManager, animationManager, imageManager };
+const allManagers = {
+  logManager,
+  vfxManager,
+  eventManager,
+  statusEffectManager,
+  battleMaster,
+  aiManager,
+  metaAiManager,
+  delayManager,
+  animationManager,
+  imageManager,
+  bindingManager,
+  decorationManager,
+};
 const uiControls = { startBtn };
 
 const simulationManager = new SimulationManager(allManagers, uiControls);
