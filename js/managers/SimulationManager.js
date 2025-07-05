@@ -1,5 +1,6 @@
 import { CombatManager } from '../combatManager.js';
 import { LayerManager } from './LayerManager.js';
+import { BackgroundManager } from './BackgroundManager.js';
 
 export class SimulationManager {
     constructor(managers, uiControls) {
@@ -14,11 +15,13 @@ export class SimulationManager {
         this.imageManager = managers.imageManager;
 
         this.layerManager = new LayerManager(this.canvas.width, this.canvas.height);
-        this.backgroundCtx = this.layerManager.addLayer('background');
+        this.backgroundManager = new BackgroundManager(this.imageManager, this.layerManager, this.canvas.width, this.canvas.height);
+        this.backgroundCtx = this.layerManager.getLayer('background');
         this.unitCtx = this.layerManager.addLayer('units');
     }
 
     preRenderGrid() {
+        this.backgroundManager.draw();
         this.backgroundCtx.strokeStyle = '#7f8c8d';
         this.backgroundCtx.lineWidth = 1;
         for (let i = 0; i <= this.GRID_COLS; i++) {
@@ -107,6 +110,7 @@ export class SimulationManager {
     }
 
     async init() {
+        await this.backgroundManager.load('assets/images/battle-stage-forest.png');
         this.preRenderGrid();
         this.combatManager.init();
         await this.loadUnitSprites();
