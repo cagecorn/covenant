@@ -13,3 +13,4 @@ export { LayerManager } from './LayerManager.js';
 export { BindingManager } from './BindingManager.js';
 export { BackgroundManager } from './BackgroundManager.js';
 export { DecorationManager } from './DecorationManager.js';
+export { InputManager } from './InputManager.js';
