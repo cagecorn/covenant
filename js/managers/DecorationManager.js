@@ -2,9 +2,15 @@ export class DecorationManager {
   constructor(bindingManager, cellSize = 192) {
     this.bindingManager = bindingManager;
     this.cellSize = cellSize;
+    this.flagsEnabled = false;
+  }
+
+  setFlagsEnabled(enabled) {
+    this.flagsEnabled = enabled;
   }
 
   async applyFlag(unit) {
+    if (!this.flagsEnabled) return;
     const flagPath =
       unit.team === 'player'
         ? 'assets/images/blue-flag.png'
