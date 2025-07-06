@@ -134,8 +134,12 @@ export class SimulationManager {
         this.unitCtx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
         if (units) {
-            // 2. Y좌표를 기준으로 유닛을 정렬합니다. (y가 작은 유닛부터 그려야 자연스럽습니다)
-            const sorted = units.slice().sort((a, b) => a.y - b.y);
+            // 2. 애니메이션 중인 Y좌표(renderY)까지 고려하여 유닛을 정렬합니다.
+            const sorted = units.slice().sort((a, b) => {
+                const yA = a.renderY ?? a.y;
+                const yB = b.renderY ?? b.y;
+                return yA - yB;
+            });
 
             // 3. 정렬된 유닛을 하나씩 `unitCtx`에 그립니다.
             sorted.forEach(unit => {
