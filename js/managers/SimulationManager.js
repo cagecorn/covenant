@@ -53,6 +53,8 @@ export class SimulationManager {
     drawUnit(unit, ctx) {
         if (unit.isDead) return;
 
+        ctx.save();
+
         const drawX = (unit.renderX ?? unit.x) * this.CELL_SIZE + this.CELL_SIZE / 2;
         const drawY = (unit.renderY ?? unit.y) * this.CELL_SIZE + this.CELL_SIZE - 24;
         const spriteHeight = this.CELL_SIZE * 2;
@@ -127,6 +129,7 @@ export class SimulationManager {
         }
 
         this.combatManager.managers.vfxManager.drawStatusIcons(ctx, unit);
+        ctx.restore();
     }
 
     render(units) {
