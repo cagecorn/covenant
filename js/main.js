@@ -65,9 +65,10 @@ async function start() {
     rendererManager.autoFit();
     renderLoopManager.start();
 
-    startBtn.addEventListener('click', () => {
+    startBtn.addEventListener('click', async () => {
         startBtn.disabled = true;
         simulationManager.combatManager.init();
+        await simulationManager.prepareUnits();
         gameLoopManager.start();
     });
 }
