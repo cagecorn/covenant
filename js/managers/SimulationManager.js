@@ -2,6 +2,7 @@ import { CombatManager } from '../combatManager.js';
 import { LayerManager } from './LayerManager.js';
 import { BackgroundManager } from './BackgroundManager.js';
 import { InputManager } from './InputManager.js';
+import { CameraManager } from './CameraManager.js';
 
 export class SimulationManager {
     constructor(managers, uiControls) {
@@ -11,7 +12,9 @@ export class SimulationManager {
         // --- 엔진: 핵심 매니저들을 소유하고 연결 ---
         this.managers = managers;
         this.managers.layerManager = new LayerManager(this.canvas.width, this.canvas.height);
-        this.managers.inputManager = new InputManager(this.canvas);
+        this.managers.cameraManager = managers.cameraManager || new CameraManager();
+        this.managers.inputManager = managers.inputManager || new InputManager(this.canvas, this.managers.cameraManager);
+        this.managers.inputManager.init();
         this.backgroundManager = new BackgroundManager(this.managers.imageManager, this.managers.layerManager, this.canvas.width, this.canvas.height);
         // ------------------------------------------
 

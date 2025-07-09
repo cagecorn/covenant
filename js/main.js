@@ -15,6 +15,8 @@ import {
     ImageManager,
     BindingManager,
     DecorationManager,
+    InputManager,
+    CameraManager,
     // 새로운 매니저들
     RenderLoopManager,
     GameLoopManager,
@@ -38,11 +40,14 @@ const animationManager = new AnimationManager(delayManager);
 const imageManager = new ImageManager();
 const bindingManager = new BindingManager(imageManager);
 const decorationManager = new DecorationManager(bindingManager);
+const cameraManager = new CameraManager();
+const inputManager = new InputManager(canvas, cameraManager);
+inputManager.init();
 
 const baseManagers = {
   logManager, vfxManager, eventManager, statusEffectManager, battleMaster,
   aiManager, metaAiManager, delayManager, animationManager, imageManager,
-  bindingManager, decorationManager,
+  bindingManager, decorationManager, cameraManager, inputManager,
 };
 
 // --- 매니저 인스턴스 생성 (2단계: 시뮬레이션 및 루프 매니저) ---
@@ -52,7 +57,7 @@ const simulationManager = new SimulationManager(baseManagers, uiControls);
 const rendererManager = new RendererManager(canvas, {
     combatManager: simulationManager.combatManager,
     layerManager: simulationManager.managers.layerManager,
-    inputManager: simulationManager.managers.inputManager
+    cameraManager: simulationManager.managers.cameraManager
 });
 vfxManager.setCellSize(rendererManager.CELL_SIZE);
 

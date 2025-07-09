@@ -4,7 +4,7 @@ export class RendererManager {
         this.ctx = canvas.getContext('2d');
         this.combatManager = managers.combatManager; // CombatManager에 직접 접근
         this.layerManager = managers.layerManager;
-        this.inputManager = managers.inputManager;
+        this.cameraManager = managers.cameraManager;
 
         // --- 렌더링 엔진: 캔버스와 관련된 모든 요소를 소유 ---
         this.CELL_SIZE = 192;
@@ -95,9 +95,9 @@ export class RendererManager {
 
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         this.ctx.save();
-        if (this.inputManager) {
-            this.ctx.translate(this.inputManager.offsetX, this.inputManager.offsetY);
-            this.ctx.scale(this.inputManager.scale, this.inputManager.scale);
+        if (this.cameraManager) {
+            this.ctx.translate(this.cameraManager.offsetX, this.cameraManager.offsetY);
+            this.ctx.scale(this.cameraManager.scale, this.cameraManager.scale);
         }
         this.layerManager.draw(this.ctx);
         this.combatManager.managers.vfxManager.draw(this.ctx);
@@ -105,14 +105,14 @@ export class RendererManager {
     }
 
     autoFit() {
-        if (!this.inputManager) return;
+        if (!this.cameraManager) return;
         const maxWidth = window.innerWidth;
         const maxHeight = window.innerHeight;
         const scaleX = maxWidth / (this.CELL_SIZE * this.GRID_COLS);
         const scaleY = maxHeight / (this.CELL_SIZE * this.GRID_ROWS);
         const scale = Math.min(scaleX, scaleY, 1);
-        this.inputManager.scale = scale;
-        this.inputManager.offsetX = (maxWidth - this.canvas.width * scale) / 2;
-        this.inputManager.offsetY = (maxHeight - this.canvas.height * scale) / 2;
+        this.cameraManager.scale = scale;
+        this.cameraManager.offsetX = (maxWidth - this.canvas.width * scale) / 2;
+        this.cameraManager.offsetY = (maxHeight - this.canvas.height * scale) / 2;
     }
 }

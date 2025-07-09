@@ -1,15 +1,13 @@
+import { CameraManager } from './CameraManager.js';
+
 export class InputManager {
-    constructor(canvas) {
+    constructor(canvas, cameraManager = new CameraManager()) {
         this.canvas = canvas;
+        this.camera = cameraManager;
         this.canvas.style.touchAction = 'none';
-        this.scale = 1;
-        this.offsetX = 0;
-        this.offsetY = 0;
         this.isDragging = false;
         this.lastX = 0;
         this.lastY = 0;
-        this.minScale = 0.5;
-        this.maxScale = 2.5;
         this.initialized = false;
     }
 
@@ -23,19 +21,17 @@ export class InputManager {
         this.canvas.addEventListener('wheel', e => {
             e.preventDefault();
             const zoomFactor = 1 + (e.deltaY < 0 ? 0.1 : -0.1);
-            const newScale = this.scale * zoomFactor;
-            this.scale = Math.min(this.maxScale, Math.max(this.minScale, newScale));
+            this.camera.zoom(zoomFactor);
         }, { passive: false });
 
         const startDrag = e => {
             this.isDragging = true;
-            this.lastX = e.clientX - this.offsetX;
-            this.lastY = e.clientY - this.offsetY;
+            this.lastX = e.clientX - this.camera.offsetX;
+            this.lastY = e.clientY - this.camera.offsetY;
         };
         const duringDrag = e => {
             if (!this.isDragging) return;
-            this.offsetX = e.clientX - this.lastX;
-            this.offsetY = e.clientY - this.lastY;
+            this.camera.setOffset(e.clientX - this.lastX, e.clientY - this.lastY);
         };
         const endDrag = () => { this.isDragging = false; };
 
