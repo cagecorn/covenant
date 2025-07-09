@@ -1,6 +1,7 @@
 export class InputManager {
     constructor(canvas) {
         this.canvas = canvas;
+        this.canvas.style.touchAction = 'none';
         this.scale = 1;
         this.offsetX = 0;
         this.offsetY = 0;
@@ -9,7 +10,13 @@ export class InputManager {
         this.lastY = 0;
         this.minScale = 0.5;
         this.maxScale = 2.5;
+        this.initialized = false;
+    }
+
+    init() {
+        if (this.initialized) return;
         this._initEvents();
+        this.initialized = true;
     }
 
     _initEvents() {
@@ -18,7 +25,7 @@ export class InputManager {
             const zoomFactor = 1 + (e.deltaY < 0 ? 0.1 : -0.1);
             const newScale = this.scale * zoomFactor;
             this.scale = Math.min(this.maxScale, Math.max(this.minScale, newScale));
-        });
+        }, { passive: false });
 
         const startDrag = e => {
             this.isDragging = true;
