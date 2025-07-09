@@ -27,15 +27,19 @@ export class SimulationManager {
         await this.backgroundManager.load('assets/images/battle-stage-forest.png');
         this.preRenderGrid();
         this.combatManager.init();
-
-        // 유닛 스프라이트 로드
-        const units = this.combatManager.allUnits;
-        const promises = units.map(u => this.managers.imageManager.load(u.image).then(img => { u.sprite = img; }));
-        await Promise.all(promises);
-
-        await this.combatManager.managers.decorationManager.applyDefaultDecorations(this.combatManager.allUnits);
+        await this.prepareUnits();
 
         // 초기 렌더링은 이제 RendererManager와 RenderLoopManager가 담당
+    }
+
+    async prepareUnits() {
+        const units = this.combatManager.allUnits;
+        const promises = units.map(u =>
+            this.managers.imageManager.load(u.image).then(img => { u.sprite = img; })
+        );
+        await Promise.all(promises);
+
+        await this.combatManager.managers.decorationManager.applyDefaultDecorations(units);
     }
 
     preRenderGrid() {
