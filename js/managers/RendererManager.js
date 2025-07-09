@@ -96,8 +96,8 @@ export class RendererManager {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         this.ctx.save();
         if (this.cameraManager) {
-            this.ctx.translate(this.cameraManager.offsetX, this.cameraManager.offsetY);
             this.ctx.scale(this.cameraManager.scale, this.cameraManager.scale);
+            this.ctx.translate(this.cameraManager.offsetX, this.cameraManager.offsetY);
         }
         this.layerManager.draw(this.ctx);
         this.combatManager.managers.vfxManager.draw(this.ctx);
@@ -114,5 +114,7 @@ export class RendererManager {
         this.cameraManager.scale = scale;
         this.cameraManager.offsetX = (maxWidth - this.canvas.width * scale) / 2;
         this.cameraManager.offsetY = (maxHeight - this.canvas.height * scale) / 2;
+        this.canvas.style.width = `${this.canvas.width * scale}px`;
+        this.canvas.style.height = `${this.canvas.height * scale}px`;
     }
 }

@@ -41,7 +41,11 @@ const imageManager = new ImageManager();
 const bindingManager = new BindingManager(imageManager);
 const decorationManager = new DecorationManager(bindingManager);
 const cameraManager = new CameraManager();
-const inputManager = new InputManager(canvas, cameraManager);
+const inputManager = new InputManager(
+  canvas,
+  cameraManager,
+  { width: 15 * 192, height: 10 * 192 }
+);
 inputManager.init();
 
 const baseManagers = {
@@ -68,6 +72,7 @@ const gameLoopManager = new GameLoopManager(simulationManager.combatManager, del
 async function start() {
     await simulationManager.init();
     rendererManager.autoFit();
+    window.addEventListener('resize', () => rendererManager.autoFit());
     renderLoopManager.start();
 
     startBtn.addEventListener('click', async () => {

@@ -22,4 +22,13 @@ export class CameraManager {
         this.offsetX = 0;
         this.offsetY = 0;
     }
+
+    clampOffset(canvasW, canvasH, worldW, worldH) {
+        const scaledW = worldW * this.scale;
+        const scaledH = worldH * this.scale;
+        const minX = canvasW - scaledW;
+        const minY = canvasH - scaledH;
+        this.offsetX = Math.min(0, Math.max(minX, this.offsetX));
+        this.offsetY = Math.min(0, Math.max(minY, this.offsetY));
+    }
 }

@@ -13,7 +13,11 @@ export class SimulationManager {
         this.managers = managers;
         this.managers.layerManager = new LayerManager(this.canvas.width, this.canvas.height);
         this.managers.cameraManager = managers.cameraManager || new CameraManager();
-        this.managers.inputManager = managers.inputManager || new InputManager(this.canvas, this.managers.cameraManager);
+        this.managers.inputManager = managers.inputManager || new InputManager(
+            this.canvas,
+            this.managers.cameraManager,
+            { width: 15 * 192, height: 10 * 192 }
+        );
         this.managers.inputManager.init();
         this.backgroundManager = new BackgroundManager(this.managers.imageManager, this.managers.layerManager, this.canvas.width, this.canvas.height);
         // ------------------------------------------
