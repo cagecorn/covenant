@@ -31,21 +31,6 @@ export class RendererManager {
         });
 
         if (unit.sprite) {
-            // --- 그림자 그리기 시작 ---
-            ctx.save();
-            ctx.translate(drawX, drawY);
-            ctx.transform(1, 0, -0.5, 0.5, 0, 0);
-            if (unit.team === 'enemy') {
-                ctx.scale(-1, 1);
-            }
-            ctx.globalAlpha = 0.6;
-            ctx.drawImage(unit.sprite, -this.CELL_SIZE, -spriteHeight, this.CELL_SIZE * 2, spriteHeight);
-            ctx.globalCompositeOperation = 'source-in';
-            ctx.fillStyle = 'black';
-            ctx.fillRect(-this.CELL_SIZE, -spriteHeight, this.CELL_SIZE * 2, spriteHeight);
-            ctx.restore();
-            // --- 그림자 그리기 종료 ---
-
             if (unit.team === 'enemy') {
                 ctx.save();
                 ctx.translate(drawX, drawY);
