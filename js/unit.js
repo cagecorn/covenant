@@ -14,9 +14,6 @@ export class Unit {
         this.skills = template.skills || [];
         Object.assign(this, CLASS_STATS[this.classType]);
         this.image = CLASS_STATS[this.classType].image;
-        if (template.image) {
-            this.image = template.image;
-        }
         this.sprite = null;
         this.isDead = false; this.hasActed = false;
         this.shield = this.valor * 2; this.maxShield = this.shield;
