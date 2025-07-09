@@ -183,6 +183,10 @@ export class SimulationManager {
         await this.combatManager.managers.decorationManager.applyDefaultDecorations(this.combatManager.allUnits);
         this.autoFit();
 
+        if (this.inputManager) {
+            this.inputManager.init();
+        }
+
         // 초기 렌더링
         this.render(this.combatManager.allUnits);
     }
