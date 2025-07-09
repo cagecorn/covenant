@@ -63,9 +63,13 @@ async function start() {
     renderLoopManager.start();
 
     // 3. "시작" 버튼 클릭 시 게임 로직 루프 시작
-    startBtn.addEventListener('click', () => {
+    startBtn.addEventListener('click', async () => {
         startBtn.disabled = true;
         simulationManager.combatManager.init();
+        await simulationManager.loadUnitSprites();
+        await simulationManager.combatManager.managers.decorationManager.applyDefaultDecorations(
+            simulationManager.combatManager.allUnits
+        );
         gameLoopManager.start();
     });
 }
