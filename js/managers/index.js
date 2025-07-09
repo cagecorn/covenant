@@ -17,3 +17,4 @@ export { InputManager } from './InputManager.js';
 // 추가된 매니저들
 export { RenderLoopManager } from './RenderLoopManager.js';
 export { GameLoopManager } from './GameLoopManager.js';
+export { RendererManager } from './RendererManager.js';

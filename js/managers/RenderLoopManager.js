@@ -1,6 +1,6 @@
 export class RenderLoopManager {
-    constructor(simulationManager) {
-        this.simulationManager = simulationManager;
+    constructor(rendererManager) {
+        this.rendererManager = rendererManager;
         this.isRunning = false;
         this.animationFrameId = null;
 
@@ -23,7 +23,7 @@ export class RenderLoopManager {
             // console.log(`FPS: ${this.fps}`); // FPS 확인용
         }
 
-        this.simulationManager.render(this.simulationManager.combatManager.allUnits);
+        this.rendererManager.render();
         this.animationFrameId = requestAnimationFrame(this._loop.bind(this));
     }
 

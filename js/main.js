@@ -15,15 +15,16 @@ import {
     ImageManager,
     BindingManager,
     DecorationManager,
-    InputManager,
     // 새로운 매니저들
     RenderLoopManager,
-    GameLoopManager
+    GameLoopManager,
+    RendererManager
 } from './managers/index.js';
 
 // --- 전역 변수 및 UI 요소 ---
 const startBtn = document.getElementById('startBtn');
 const uiControls = { startBtn };
+const canvas = document.getElementById('gameCanvas');
 
 // --- 매니저 인스턴스 생성 (1단계: 기본 매니저) ---
 const logManager = new BattleLogManager(document.getElementById('log'));
@@ -38,38 +39,35 @@ const imageManager = new ImageManager();
 const bindingManager = new BindingManager(imageManager);
 const decorationManager = new DecorationManager(bindingManager);
 
-const allManagers = {
+const baseManagers = {
   logManager, vfxManager, eventManager, statusEffectManager, battleMaster,
   aiManager, metaAiManager, delayManager, animationManager, imageManager,
   bindingManager, decorationManager,
 };
 
 // --- 매니저 인스턴스 생성 (2단계: 시뮬레이션 및 루프 매니저) ---
-const simulationManager = new SimulationManager(allManagers, uiControls);
-const inputManager = new InputManager(simulationManager.canvas);
-simulationManager.setInputManager(inputManager);
-vfxManager.setCellSize(simulationManager.CELL_SIZE);
+const simulationManager = new SimulationManager(baseManagers, uiControls);
 
-// 루프 매니저 생성 및 연결
-const renderLoopManager = new RenderLoopManager(simulationManager);
+// 렌더링 및 루프 전문 매니저 생성
+const rendererManager = new RendererManager(canvas, {
+    combatManager: simulationManager.combatManager,
+    layerManager: simulationManager.managers.layerManager,
+    inputManager: simulationManager.managers.inputManager
+});
+vfxManager.setCellSize(rendererManager.CELL_SIZE);
+
+const renderLoopManager = new RenderLoopManager(rendererManager);
 const gameLoopManager = new GameLoopManager(simulationManager.combatManager, delayManager);
 
 // --- 게임 시작 함수 ---
 async function start() {
-    // 1. 시뮬레이션 환경 초기화 (유닛 생성, 배경 로드 등)
     await simulationManager.init();
-
-    // 2. 렌더링 루프 시작
+    rendererManager.autoFit();
     renderLoopManager.start();
 
-    // 3. "시작" 버튼 클릭 시 게임 로직 루프 시작
-    startBtn.addEventListener('click', async () => {
+    startBtn.addEventListener('click', () => {
         startBtn.disabled = true;
         simulationManager.combatManager.init();
-        await simulationManager.loadUnitSprites();
-        await simulationManager.combatManager.managers.decorationManager.applyDefaultDecorations(
-            simulationManager.combatManager.allUnits
-        );
         gameLoopManager.start();
     });
 }
