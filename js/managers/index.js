@@ -14,3 +14,6 @@ export { BindingManager } from './BindingManager.js';
 export { BackgroundManager } from './BackgroundManager.js';
 export { DecorationManager } from './DecorationManager.js';
 export { InputManager } from './InputManager.js';
+// 추가된 매니저들
+export { RenderLoopManager } from './RenderLoopManager.js';
+export { GameLoopManager } from './GameLoopManager.js';

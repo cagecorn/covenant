@@ -8,9 +8,10 @@ export class SimulationManager {
         this.combatManager = new CombatManager(managers, uiControls);
         this.canvas = document.getElementById('gameCanvas');
         this.ctx = this.canvas.getContext('2d');
-        // 캔버스 스케일 조정 시 이미지를 부드럽게 처리하지 않도록 설정
         this.ctx.imageSmoothingEnabled = false;
-        this.startBtn = uiControls.startBtn;
+        // startBtn 대신 uiControls 전체를 보존
+        this.ui = uiControls;
+        
         this.CELL_SIZE = 192;
         this.GRID_COLS = 15;
         this.GRID_ROWS = 10;
@@ -129,38 +130,28 @@ export class SimulationManager {
         this.combatManager.managers.vfxManager.drawStatusIcons(ctx, unit);
     }
 
+    // 렌더링 함수 (Y 좌표 기준 정렬)
     render(units) {
-        // 1. 유닛 레이어를 깨끗하게 지웁니다.
         this.unitCtx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
         if (units) {
-            // 2. 애니메이션 중인 Y좌표(renderY)까지 고려하여 유닛을 정렬합니다.
             const sorted = units.slice().sort((a, b) => {
                 const yA = a.renderY ?? a.y;
                 const yB = b.renderY ?? b.y;
                 return yA - yB;
             });
-
-            // 3. 정렬된 유닛을 하나씩 `unitCtx`에 그립니다.
             sorted.forEach(unit => {
                 this.drawUnit(unit, this.unitCtx);
             });
         }
 
-        // 4. 메인 캔버스를 지웁니다.
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         this.ctx.save();
-
-        // 5. 화면 이동 및 확대/축소를 적용합니다.
         if (this.inputManager) {
             this.ctx.translate(this.inputManager.offsetX, this.inputManager.offsetY);
             this.ctx.scale(this.inputManager.scale, this.inputManager.scale);
         }
-        
-        // 6. 모든 레이어(배경, 유닛)를 메인 캔버스에 그립니다.
         this.layerManager.draw(this.ctx);
-        
-        // 7. 시각 효과(데미지 숫자 등)를 그립니다.
         this.combatManager.managers.vfxManager.draw(this.ctx);
         this.ctx.restore();
     }
@@ -183,15 +174,16 @@ export class SimulationManager {
         this.inputManager.offsetY = (maxHeight - this.canvas.height * scale) / 2;
     }
 
+    // 초기 세팅만 수행하고 루프는 외부에서 제어
     async init() {
         await this.backgroundManager.load('assets/images/battle-stage-forest.png');
         this.preRenderGrid();
         this.combatManager.init();
         await this.loadUnitSprites();
+        await this.combatManager.managers.decorationManager.applyDefaultDecorations(this.combatManager.allUnits);
         this.autoFit();
+
+        // 초기 렌더링
         this.render(this.combatManager.allUnits);
-        this.startBtn.addEventListener('click', async () => {
-            await this.combatManager.startSimulation(units => this.render(units));
-        });
     }
 }
