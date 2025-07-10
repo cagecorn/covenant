@@ -1,16 +1,47 @@
 export class VisualEffectManager {
-    constructor(cellSize = 50) {
+    constructor(delayManager, imageManager, cellSize = 50) {
         this.effects = [];
         this.cellSize = cellSize;
+        this.delayManager = delayManager;
+        this.imageManager = imageManager;
     }
 
     setCellSize(cellSize) {
         this.cellSize = cellSize;
     }
 
+    // 타격 이펙트 애니메이션 추가
+    addStrikeEffect(target) {
+        const animationPromise = new Promise(async (resolve) => {
+            const effectImages = [
+                'assets/images/strike-effect-1.png',
+                'assets/images/strike-effect-2.png'
+            ];
+            const imagePath = effectImages[Math.floor(Math.random() * effectImages.length)];
+            const image = await this.imageManager.load(imagePath);
+
+            const effect = {
+                id: (Math.random() + 1).toString(36).substring(7),
+                type: 'strike',
+                target,
+                image,
+                duration: 30,
+                maxDuration: 30,
+                scale: 0.5,
+                opacity: 1.0,
+            };
+            this.effects.push(effect);
+
+            setTimeout(resolve, effect.duration * (1000 / 60));
+        });
+
+        this.delayManager.waitFor(animationPromise);
+    }
+
     addPopup(text, target, color = 'white') {
         this.effects.push({
             id: (Math.random() + 1).toString(36).substring(7),
+            type: 'popup',
             text,
             color,
             x: target.x * this.cellSize + this.cellSize / 2,
@@ -21,11 +52,32 @@ export class VisualEffectManager {
 
     draw(ctx) {
         this.effects = this.effects.filter(effect => {
-            ctx.fillStyle = effect.color;
-            ctx.font = 'bold 16px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillText(effect.text, effect.x, effect.y);
-            effect.y -= 0.5;
+            if (effect.type === 'strike') {
+                const { target, image, duration, maxDuration } = effect;
+                const progress = 1 - (duration / maxDuration);
+
+                effect.scale = 0.5 + progress * 1.5;
+                if (progress > 0.5) {
+                    effect.opacity = 1.0 - ((progress - 0.5) * 2);
+                }
+
+                const centerX = (target.renderX ?? target.x) * this.cellSize + this.cellSize / 2;
+                const centerY = (target.renderY ?? target.y) * this.cellSize + this.cellSize / 2;
+                const size = this.cellSize * effect.scale;
+
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, effect.opacity);
+                ctx.drawImage(image, centerX - size / 2, centerY - size / 2, size, size);
+                ctx.restore();
+
+            } else if (effect.type === 'popup') {
+                ctx.fillStyle = effect.color;
+                ctx.font = 'bold 16px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(effect.text, effect.x, effect.y);
+                effect.y -= 0.5;
+            }
+
             effect.duration--;
             return effect.duration > 0;
         });
