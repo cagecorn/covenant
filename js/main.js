@@ -20,7 +20,8 @@ import {
     // 새로운 매니저들
     RenderLoopManager,
     GameLoopManager,
-    RendererManager
+    RendererManager,
+    UiManager
 } from './managers/index.js';
 
 // --- 전역 변수 및 UI 요소 ---
@@ -47,11 +48,13 @@ const inputManager = new InputManager(
   { width: 15 * 192, height: 10 * 192 }
 );
 inputManager.init();
+const uiManager = new UiManager(document.getElementById('territory-ui-container'));
+uiManager.init();
 
 const baseManagers = {
   logManager, vfxManager, eventManager, statusEffectManager, battleMaster,
   aiManager, metaAiManager, delayManager, animationManager, imageManager,
-  bindingManager, decorationManager, cameraManager, inputManager,
+  bindingManager, decorationManager, cameraManager, inputManager, uiManager,
 };
 
 // --- 매니저 인스턴스 생성 (2단계: 시뮬레이션 및 루프 매니저) ---
