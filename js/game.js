@@ -303,7 +303,8 @@ async function runTurn() {
     }
 
     if (isSimulationRunning) {
-        setTimeout(runTurn, 500);
+        // 턴 전환을 느리게 하기 위해 대기 시간을 기존의 두 배로 늘립니다
+        setTimeout(runTurn, 1000);
     }
 }
 function preRenderGrid(){backgroundCtx.strokeStyle="#7f8c8d",backgroundCtx.lineWidth=1;for(let t=0;t<=GRID_COLS;t++)backgroundCtx.beginPath(),backgroundCtx.moveTo(t*CELL_SIZE,0),backgroundCtx.lineTo(t*CELL_SIZE,GRID_ROWS*CELL_SIZE),backgroundCtx.stroke();for(let t=0;t<=GRID_ROWS;t++)backgroundCtx.beginPath(),backgroundCtx.moveTo(0,t*CELL_SIZE),backgroundCtx.lineTo(GRID_COLS*CELL_SIZE,t*CELL_SIZE),backgroundCtx.stroke()}
