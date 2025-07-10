@@ -53,7 +53,8 @@ export class GameLoopManager {
         } else {
             // 5. 다음 턴 준비
             this.state = GameState.RUNNING;
-            setTimeout(() => this._loop(), 500);
+            // 턴 전환 지연 시간을 늘려 게임 템포를 조절합니다
+            setTimeout(() => this._loop(), 1000);
         }
     }
 
