@@ -9,7 +9,7 @@ const createManagers = () => {
     return {
         logManager: { add() {}, flush() {}, clear() {} },
         eventManager: { publish() {}, subscribe() {} },
-        vfxManager: { addPopup() {}, draw() {}, drawStatusIcons() {}, addStrikeEffect() {} },
+        vfxManager: { addPopup() {}, draw() {}, drawStatusIcons() {}, addStrikeEffect() {}, addHitShakeEffect() {} },
         statusEffectManager: { register() {}, remove() {}, updateTurn() {} },
         battleMaster: {},
         aiManager: ai,
