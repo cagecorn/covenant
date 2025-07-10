@@ -74,15 +74,3 @@ button:hover {
 .log-skill { color: #3498db; }
 .log-heal { color: #2ecc71; }
 .log-death { font-weight: bold; color: #f1c40f; }
-
-#territory-ui-container {
-    width: 100%;
-    height: 400px;
-    margin-top: 15px;
-}
-
-#territory-ui-container iframe {
-    width: 100%;
-    height: 100%;
-    border: none;
-}
