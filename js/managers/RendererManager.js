@@ -104,10 +104,10 @@ export class RendererManager {
         this.ctx.restore();
     }
 
-    autoFit(offsetY = 0) {
+    autoFit() {
         if (!this.cameraManager) return;
         const maxWidth = window.innerWidth;
-        const maxHeight = window.innerHeight - offsetY;
+        const maxHeight = window.innerHeight;
         const scaleX = maxWidth / (this.CELL_SIZE * this.GRID_COLS);
         const scaleY = maxHeight / (this.CELL_SIZE * this.GRID_ROWS);
         const scale = Math.min(scaleX, scaleY, 1);

@@ -5,8 +5,8 @@ import { InputManager } from './InputManager.js';
 import { CameraManager } from './CameraManager.js';
 
 export class SimulationManager {
-    constructor(managers, uiManager) {
-        this.combatManager = new CombatManager(managers, uiManager);
+    constructor(managers, uiControls) {
+        this.combatManager = new CombatManager(managers, uiControls);
         this.canvas = document.getElementById('gameCanvas');
 
         // --- 엔진: 핵심 매니저들을 소유하고 연결 ---
