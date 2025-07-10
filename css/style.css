@@ -15,22 +15,18 @@ h1 {
 
 /* 게임 화면을 감싸는 컨테이너 */
 #game-wrapper {
-    display: flex; /* flexbox 레이아웃으로 변경 */
-    justify-content: center; /* 가로 중앙 정렬 */
-    align-items: center; /* 세로 중앙 정렬 */
+    display: block;
     width: 100%;
     overflow: hidden;
-    flex-grow: 1; /* 남은 공간을 모두 차지하도록 설정 */
 }
 
 canvas {
     background-color: #34495e;
     border: 3px solid #7f8c8d;
     border-radius: 10px;
-    display: block;
-    /* width와 height는 autoFit이 제어하므로 제거 */
-    /* width: 100%; */
-    /* height: auto; */
+    display: block; /* wrapper를 꽉 채우도록 표시 */
+    width: 100%;
+    height: auto;
 
     /* 이미지를 확대/축소하더라도 픽셀이 선명하게 보이도록 설정 */
     image-rendering: -moz-crisp-edges;    /* Firefox */
