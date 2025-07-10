@@ -138,8 +138,12 @@ export class Unit {
             skill.effect(this, target, this.managers);
         }
     }
-    
+
     attemptSkillOrAttack(target) {
+        if (this.managers?.animationManager) {
+            this.managers.animationManager.queueAttackLunge(this);
+        }
+
         let didUseSkill = false;
         for (const skillKey of this.skills) {
             const skill = SKILLS[skillKey];

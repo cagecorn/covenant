@@ -5,6 +5,21 @@ export class AnimationManager {
         this.moveQueue = [];
     }
 
+    // Attack lunge animation depending on team direction
+    queueAttackLunge(unit) {
+        const lungeDistance = 0.4;
+        const direction = unit.team === 'player' ? 1 : -1;
+
+        const originalX = unit.x;
+        const originalY = unit.y;
+        const lungeX = originalX + lungeDistance * direction;
+
+        // forward lunge
+        this.queueMovement(unit, originalX, originalY, lungeX, originalY);
+        // return to original position
+        this.queueMovement(unit, lungeX, originalY, originalX, originalY);
+    }
+
     queueMovement(unit, fromX, fromY, toX, toY) {
         this.moveQueue.push({ unit, fromX, fromY, toX, toY });
     }
