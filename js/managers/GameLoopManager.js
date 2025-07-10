@@ -68,6 +68,8 @@ export class GameLoopManager {
     stop() {
         console.log(`⚔️ 게임 로직 루프 정지 (상태: ${this.state})`);
         this.state = GameState.STOPPED;
-        this.combatManager.ui.startBtn.disabled = false;
+        if (this.combatManager.ui && this.combatManager.ui.enableStart) {
+            this.combatManager.ui.enableStart();
+        }
     }
 }

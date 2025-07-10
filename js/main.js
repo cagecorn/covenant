@@ -20,13 +20,15 @@ import {
     // 새로운 매니저들
     RenderLoopManager,
     GameLoopManager,
-    RendererManager
+    RendererManager,
+    UiManager
 } from './managers/index.js';
 
 // --- 전역 변수 및 UI 요소 ---
 const startBtn = document.getElementById('startBtn');
-const uiControls = { startBtn };
 const canvas = document.getElementById('gameCanvas');
+const uiManager = new UiManager(startBtn, document.getElementById('game-wrapper'));
+uiManager.init();
 
 // --- 매니저 인스턴스 생성 (1단계: 기본 매니저) ---
 const logManager = new BattleLogManager(document.getElementById('log'));
@@ -55,7 +57,7 @@ const baseManagers = {
 };
 
 // --- 매니저 인스턴스 생성 (2단계: 시뮬레이션 및 루프 매니저) ---
-const simulationManager = new SimulationManager(baseManagers, uiControls);
+const simulationManager = new SimulationManager(baseManagers, uiManager);
 
 // 렌더링 및 루프 전문 매니저 생성
 const rendererManager = new RendererManager(canvas, {
@@ -71,12 +73,12 @@ const gameLoopManager = new GameLoopManager(simulationManager.combatManager, del
 // --- 게임 시작 함수 ---
 async function start() {
     await simulationManager.init();
-    rendererManager.autoFit();
-    window.addEventListener('resize', () => rendererManager.autoFit());
+    rendererManager.autoFit(uiManager.getOffset());
+    window.addEventListener('resize', () => rendererManager.autoFit(uiManager.getOffset()));
     renderLoopManager.start();
 
     startBtn.addEventListener('click', async () => {
-        startBtn.disabled = true;
+        uiManager.disableStart();
         simulationManager.combatManager.init();
         await simulationManager.prepareUnits();
         gameLoopManager.start();

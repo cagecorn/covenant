@@ -19,3 +19,4 @@ export { CameraManager } from './CameraManager.js';
 export { RenderLoopManager } from './RenderLoopManager.js';
 export { GameLoopManager } from './GameLoopManager.js';
 export { RendererManager } from './RendererManager.js';
+export { UiManager } from './UiManager.js';
