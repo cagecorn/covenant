@@ -5,9 +5,9 @@ import { Unit } from './unit.js';
 import { UNIT_TEMPLATES } from './data.js';
 
 export class CombatManager {
-    constructor(managers, uiManager) {
+    constructor(managers, uiControls) {
         this.managers = managers; // log, vfx, event, statusEffect 매니저 포함
-        this.ui = uiManager; // UIManager 인스턴스
+        this.ui = uiControls; // startBtn 등 UI 요소
         this.playerUnits = [];
         this.enemyUnits = [];
         this.allUnits = [];
