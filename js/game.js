@@ -6,6 +6,8 @@ import { VisualEffectManager } from './managers/VisualEffectManager.js';
 import { EventManager } from './managers/EventManager.js';
 import { StatusEffectManager } from './managers/StatusEffectManager.js';
 import { battleMaster } from './managers/BattleMaster.js';
+import { DelayManager } from './managers/DelayManager.js';
+import { ImageManager } from './managers/ImageManager.js';
 
 const canvas = document.getElementById('gameCanvas'), ctx = canvas.getContext('2d');
 const startBtn = document.getElementById('startBtn'), logElement = document.getElementById('log');
@@ -20,7 +22,9 @@ const backgroundCtx = backgroundCanvas.getContext('2d');
 
 const logManager = new BattleLogManager(document.getElementById('log'));
 // [시각효과] 전역에서 사용될 비주얼 이펙트 매니저 인스턴스
-const vfxManager = new VisualEffectManager();
+const delayManager = new DelayManager();
+const imageManager = new ImageManager();
+const vfxManager = new VisualEffectManager(delayManager, imageManager);
 
 
 // [총괄 매니저] 이번 전투에 적용될 외부 요인 (임시 데이터)

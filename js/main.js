@@ -30,14 +30,14 @@ const canvas = document.getElementById('gameCanvas');
 
 // --- 매니저 인스턴스 생성 (1단계: 기본 매니저) ---
 const logManager = new BattleLogManager(document.getElementById('log'));
-const vfxManager = new VisualEffectManager();
+const delayManager = new DelayManager();
+const imageManager = new ImageManager();
+const vfxManager = new VisualEffectManager(delayManager, imageManager);
 const eventManager = new EventManager();
 const statusEffectManager = new StatusEffectManager(logManager);
 const metaAiManager = new MetaAiManager();
 const aiManager = new AiManager(metaAiManager);
-const delayManager = new DelayManager();
 const animationManager = new AnimationManager(delayManager);
-const imageManager = new ImageManager();
 const bindingManager = new BindingManager(imageManager);
 const decorationManager = new DecorationManager(bindingManager);
 const cameraManager = new CameraManager();

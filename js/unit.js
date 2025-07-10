@@ -155,6 +155,7 @@ export class Unit {
     basicAttack(target) {
         const damage = this.getAttackPower();
         this.managers.logManager.add(`⚔️ ${this.name} → ${target.name} 일반 공격! (${damage} 피해)`, 'attack');
+        this.managers.vfxManager.addStrikeEffect(target);
         target.takeDamage(damage);
         this.managers.eventManager.publish('unitAttack', { caster: this, target: target, damage: damage });
     }
