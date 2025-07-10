@@ -106,24 +106,14 @@ export class RendererManager {
 
     autoFit() {
         if (!this.cameraManager) return;
-
-        // window.innerHeight 대신 body의 클라이언트 높이를 사용해 더 정확한 계산
-        const maxWidth = document.body.clientWidth;
-        const maxHeight = document.body.clientHeight;
-
+        const maxWidth = window.innerWidth;
+        const maxHeight = window.innerHeight;
         const scaleX = maxWidth / (this.CELL_SIZE * this.GRID_COLS);
         const scaleY = maxHeight / (this.CELL_SIZE * this.GRID_ROWS);
-
-        // 0.95를 곱해 약간의 여백을 줍니다.
-        const scale = Math.min(scaleX, scaleY, 1) * 0.95;
-
-        // 카메라의 줌 레벨을 설정합니다.
+        const scale = Math.min(scaleX, scaleY, 1);
         this.cameraManager.scale = scale;
-
-        // 카메라 위치를 초기화합니다.
-        this.cameraManager.setOffset(0, 0);
-
-        // 캔버스의 화면상 크기를 조절합니다.
+        this.cameraManager.offsetX = (maxWidth - this.canvas.width * scale) / 2;
+        this.cameraManager.offsetY = (maxHeight - this.canvas.height * scale) / 2;
         this.canvas.style.width = `${this.canvas.width * scale}px`;
         this.canvas.style.height = `${this.canvas.height * scale}px`;
     }
