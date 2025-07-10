@@ -1,7 +1,6 @@
 export class VisualEffectManager {
     constructor(delayManager, imageManager, cellSize = 50) {
         this.effects = [];
-        this.shakeEffects = []; // 피격 흔들림 효과 배열
         this.cellSize = cellSize;
         this.delayManager = delayManager;
         this.imageManager = imageManager;
@@ -51,23 +50,7 @@ export class VisualEffectManager {
         });
     }
 
-    // 피격 시 흔들림 효과 추가
-    addHitShakeEffect(target) {
-        const existing = this.shakeEffects.find(s => s.target.id === target.id);
-        if (existing) {
-            existing.duration = 10;
-            return;
-        }
-
-        this.shakeEffects.push({
-            target,
-            duration: 10,
-            amplitude: 2
-        });
-    }
-
     draw(ctx) {
-        // strike & popup 효과 처리
         this.effects = this.effects.filter(effect => {
             if (effect.type === 'strike') {
                 const { target, image, duration, maxDuration } = effect;
@@ -97,21 +80,6 @@ export class VisualEffectManager {
 
             effect.duration--;
             return effect.duration > 0;
-        });
-
-        // 피격 흔들림 효과 처리
-        this.shakeEffects = this.shakeEffects.filter(shake => {
-            const { target, duration, amplitude } = shake;
-            const renderX = target.renderX ?? target.x;
-            const renderY = target.renderY ?? target.y;
-            const actualX = renderX * this.cellSize;
-            const actualY = renderY * this.cellSize;
-            const offsetX = Math.sin(Date.now() * 20) * amplitude;
-
-            ctx.drawImage(target.image, actualX + offsetX, actualY, this.cellSize, this.cellSize);
-
-            shake.duration--;
-            return shake.duration > 0;
         });
     }
 
