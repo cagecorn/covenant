@@ -108,7 +108,10 @@ export class VisualEffectManager {
             const actualY = renderY * this.cellSize;
             const offsetX = Math.sin(Date.now() * 20) * amplitude;
 
-            ctx.drawImage(target.image, actualX + offsetX, actualY, this.cellSize, this.cellSize);
+            const img = target.sprite || target.image;
+            if (img) {
+                ctx.drawImage(img, actualX + offsetX, actualY, this.cellSize, this.cellSize);
+            }
 
             shake.duration--;
             return shake.duration > 0;
