@@ -116,7 +116,6 @@ export class Unit {
         
         // [수정] 전역 vfxManager 대신, 내장된 this.managers.vfxManager를 사용합니다.
         this.managers.vfxManager.addPopup(`-${finalDamage}`, this, '#ff4757');
-        this.managers.vfxManager.addHitShakeEffect(this);
 
         if (this.hp <= 0 && !this.isDead) {
             this.hp = 0;
