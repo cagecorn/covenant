@@ -20,16 +20,13 @@ import {
     // 새로운 매니저들
     RenderLoopManager,
     GameLoopManager,
-    RendererManager,
-    UiManager
+    RendererManager
 } from './managers/index.js';
 
 // --- 전역 변수 및 UI 요소 ---
 const startBtn = document.getElementById('startBtn');
 const uiControls = { startBtn };
 const canvas = document.getElementById('gameCanvas');
-const uiManager = new UiManager({ logElement: document.getElementById('log') });
-uiManager.initWorldMap();
 
 // --- 매니저 인스턴스 생성 (1단계: 기본 매니저) ---
 const logManager = new BattleLogManager(document.getElementById('log'));

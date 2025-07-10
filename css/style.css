@@ -74,16 +74,3 @@ button:hover {
 .log-skill { color: #3498db; }
 .log-heal { color: #2ecc71; }
 .log-death { font-weight: bold; color: #f1c40f; }
-
-#worldMap {
-    width: 100%;
-    height: 450px;
-    margin-top: 15px;
-    border: 1px solid #7f8c8d;
-}
-
-#worldMap iframe {
-    width: 100%;
-    height: 100%;
-    border: none;
-}
