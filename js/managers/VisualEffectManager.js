@@ -1,5 +1,5 @@
 export class VisualEffectManager {
-    constructor(delayManager, imageManager, cellSize = 192) {
+    constructor(delayManager, imageManager, cellSize = 576) {
         this.effects = [];
         this.cellSize = cellSize;
         this.delayManager = delayManager;

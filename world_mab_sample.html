@@ -25,8 +25,8 @@
         }
         .dungeon {
             display: grid;
-            grid-template-columns: repeat(var(--view-size, 10), 192px);
-            grid-template-rows: repeat(var(--view-size, 10), 192px);
+            grid-template-columns: repeat(var(--view-size, 10), 576px);
+            grid-template-rows: repeat(var(--view-size, 10), 576px);
             gap: 2px;
             background-color: #333;
             padding: 10px;
@@ -34,8 +34,8 @@
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
         }
         .cell {
-            width: 192px;
-            height: 192px;
+            width: 576px;
+            height: 576px;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -784,8 +784,8 @@
             const offsetY = Math.max(0, Math.min(gameState.dungeonSize - VIEW_SIZE, gameState.player.y - half));
 
             dungeonElement.style.setProperty('--view-size', VIEW_SIZE);
-            dungeonElement.style.gridTemplateColumns = `repeat(${VIEW_SIZE}, 192px)`;
-            dungeonElement.style.gridTemplateRows = `repeat(${VIEW_SIZE}, 192px)`;
+            dungeonElement.style.gridTemplateColumns = `repeat(${VIEW_SIZE}, 576px)`;
+            dungeonElement.style.gridTemplateRows = `repeat(${VIEW_SIZE}, 576px)`;
 
             for (let y = 0; y < VIEW_SIZE; y++) {
                 for (let x = 0; x < VIEW_SIZE; x++) {

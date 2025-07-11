@@ -1,5 +1,5 @@
 export class AnimationManager {
-    constructor(delayManager, cellSize = 192) {
+    constructor(delayManager, cellSize = 576) {
         this.delayManager = delayManager;
         this.cellSize = cellSize;
         this.moveQueue = [];

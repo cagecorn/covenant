@@ -7,7 +7,7 @@ export class RendererManager {
         this.cameraManager = managers.cameraManager;
 
         // --- 렌더링 엔진: 캔버스와 관련된 모든 요소를 소유 ---
-        this.CELL_SIZE = 192;
+        this.CELL_SIZE = 576;
         this.GRID_COLS = 15;
         this.GRID_ROWS = 10;
         this.unitCtx = this.layerManager.getLayer('units');
