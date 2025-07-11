@@ -3,7 +3,7 @@ export class CameraManager {
         this.scale = 1;
         this.offsetX = 0;
         this.offsetY = 0;
-        this.minScale = 0.5;
+        this.minScale = 1;
         this.maxScale = 2.5;
     }
 
