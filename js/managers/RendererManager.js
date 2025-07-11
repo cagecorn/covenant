@@ -111,7 +111,8 @@ export class RendererManager {
         const maxHeight = window.innerHeight;
         const scaleX = maxWidth / (this.CELL_SIZE * this.GRID_COLS);
         const scaleY = maxHeight / (this.CELL_SIZE * this.GRID_ROWS);
-        const scale = Math.min(scaleX, scaleY, 1);
+        // Prevent the game from shrinking below its original size
+        const scale = Math.max(Math.min(scaleX, scaleY), 1);
         this.cameraManager.scale = scale;
         this.cameraManager.minScale = scale;
         this.cameraManager.offsetX = (maxWidth - this.canvas.width * scale) / 2;
