@@ -1,8 +1,12 @@
 export class AnimationManager {
-    constructor(delayManager, cellSize = 50) {
+    constructor(delayManager, cellSize = 192) {
         this.delayManager = delayManager;
         this.cellSize = cellSize;
         this.moveQueue = [];
+    }
+
+    setCellSize(cellSize) {
+        this.cellSize = cellSize;
     }
 
     // Attack lunge animation depending on team direction

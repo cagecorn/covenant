@@ -25,6 +25,7 @@ const logManager = new BattleLogManager(document.getElementById('log'));
 const delayManager = new DelayManager();
 const imageManager = new ImageManager();
 const vfxManager = new VisualEffectManager(delayManager, imageManager);
+vfxManager.setCellSize(CELL_SIZE);
 
 
 // [총괄 매니저] 이번 전투에 적용될 외부 요인 (임시 데이터)
