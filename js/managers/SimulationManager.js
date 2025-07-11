@@ -16,7 +16,7 @@ export class SimulationManager {
         this.managers.inputManager = managers.inputManager || new InputManager(
             this.canvas,
             this.managers.cameraManager,
-            { width: 15 * 576, height: 10 * 576 }
+            { width: this.canvas.width, height: this.canvas.height }
         );
         this.managers.inputManager.init();
         this.backgroundManager = new BackgroundManager(this.managers.imageManager, this.managers.layerManager, this.canvas.width, this.canvas.height);
