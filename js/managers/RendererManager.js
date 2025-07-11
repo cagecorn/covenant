@@ -109,8 +109,9 @@ export class RendererManager {
         if (!this.cameraManager) return;
         const maxWidth = window.innerWidth;
         const maxHeight = window.innerHeight;
-        const scaleX = maxWidth / (this.CELL_SIZE * this.GRID_COLS);
-        const scaleY = maxHeight / (this.CELL_SIZE * this.GRID_ROWS);
+        // canvas 자체 크기를 기준으로 스케일을 계산한다.
+        const scaleX = maxWidth / this.canvas.width;
+        const scaleY = maxHeight / this.canvas.height;
         const scale = Math.min(scaleX, scaleY, 1);
         this.cameraManager.scale = scale;
         this.cameraManager.minScale = scale;
