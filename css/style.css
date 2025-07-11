@@ -15,9 +15,10 @@ h1 {
 
 /* 게임 화면을 감싸는 컨테이너 */
 #game-wrapper {
-    display: block;
-    width: 100%;
-    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
 }
 
 canvas {
@@ -25,8 +26,6 @@ canvas {
     border: 3px solid #7f8c8d;
     border-radius: 10px;
     display: block; /* wrapper를 꽉 채우도록 표시 */
-    width: 2880px;
-    height: 1920px;
 
     /* 이미지를 확대/축소하더라도 픽셀이 선명하게 보이도록 설정 */
     image-rendering: -moz-crisp-edges;    /* Firefox */

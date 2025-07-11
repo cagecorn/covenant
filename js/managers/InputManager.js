@@ -29,17 +29,21 @@ export class InputManager {
 
         const startDrag = e => {
             this.isDragging = true;
-            this.lastX = e.clientX - this.camera.offsetX;
-            this.lastY = e.clientY - this.camera.offsetY;
+            this.lastX = e.clientX;
+            this.lastY = e.clientY;
         };
         const duringDrag = e => {
             if (!this.isDragging) return;
-            this.camera.setOffset(e.clientX - this.lastX, e.clientY - this.lastY);
+            const dx = e.clientX - this.lastX;
+            const dy = e.clientY - this.lastY;
+            this.lastX = e.clientX;
+            this.lastY = e.clientY;
+            this.camera.offsetX += dx / this.camera.scale;
+            this.camera.offsetY += dy / this.camera.scale;
             this.camera.clampOffset(this.canvas.width, this.canvas.height, this.worldWidth, this.worldHeight);
         };
         const endDrag = () => {
             this.isDragging = false;
-            this.camera.clampOffset(this.canvas.width, this.canvas.height, this.worldWidth, this.worldHeight);
         };
 
         this.canvas.addEventListener('pointerdown', startDrag);
