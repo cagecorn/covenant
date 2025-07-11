@@ -96,8 +96,9 @@ export class RendererManager {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         this.ctx.save();
         if (this.cameraManager) {
-            this.ctx.scale(this.cameraManager.scale, this.cameraManager.scale);
+            // 카메라 위치를 먼저 적용해 실제 이동이 스케일에 영향을 받지 않도록 합니다.
             this.ctx.translate(this.cameraManager.offsetX, this.cameraManager.offsetY);
+            this.ctx.scale(this.cameraManager.scale, this.cameraManager.scale);
         }
         this.layerManager.draw(this.ctx);
         this.combatManager.managers.vfxManager.draw(this.ctx);
