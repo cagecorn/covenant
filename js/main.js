@@ -44,13 +44,9 @@ const cameraManager = new CameraManager();
 const inputManager = new InputManager(
   canvas,
   cameraManager,
-  { width: 15 * 192, height: 10 * 192 },
-  { zoomEnabled: false, dragEnabled: false }
+  { width: 15 * 192, height: 10 * 192 }
 );
 inputManager.init();
-// 기본적으로 확대/드래그 비활성화
-inputManager.setZoomEnabled(false);
-inputManager.setDragEnabled(false);
 
 const baseManagers = {
   logManager, vfxManager, eventManager, statusEffectManager, battleMaster,

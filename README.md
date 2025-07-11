@@ -82,8 +82,6 @@ StatSystem: 스탯별 효과 계산기 (용맹, 무게 포함)
 
 DecorationManager: 유닛 장식 관리 (팀 깃발은 기본 비활성화, 필요시 `setFlagsEnabled(true)` 호출)
 
-InputManager: 카메라 확대/드래그 기능 제어 (`setZoomEnabled()`/`setDragEnabled()`), 기본값 끔
-
 📆 4. 개발 일정 예시 (가볍게)
 단계	목표	예상 기간
 v0.1 프로토타입	7vs7 전투 구현 + 스탯 영향 테스트	1~2주
