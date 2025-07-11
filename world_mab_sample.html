@@ -25,8 +25,8 @@
         }
         .dungeon {
             display: grid;
-            grid-template-columns: repeat(10, 192px);
-            grid-template-rows: repeat(10, 192px);
+            grid-template-columns: repeat(var(--view-size, 10), 192px);
+            grid-template-rows: repeat(var(--view-size, 10), 192px);
             gap: 2px;
             background-color: #333;
             padding: 10px;
@@ -435,6 +435,9 @@
             dungeonSize: 10
         };
 
+        // 화면에 표시할 맵 범위 (항상 홀수 값 권장)
+        const VIEW_SIZE = 9;
+
         // 아이템 생성 함수
         function createItem(itemKey, x, y) {
             const itemData = ITEMS[itemKey];
@@ -775,23 +778,33 @@
         function renderDungeon() {
             const dungeonElement = document.getElementById('dungeon');
             dungeonElement.innerHTML = '';
-            
-            for (let y = 0; y < gameState.dungeonSize; y++) {
-                for (let x = 0; x < gameState.dungeonSize; x++) {
+
+            const half = Math.floor(VIEW_SIZE / 2);
+            const offsetX = Math.max(0, Math.min(gameState.dungeonSize - VIEW_SIZE, gameState.player.x - half));
+            const offsetY = Math.max(0, Math.min(gameState.dungeonSize - VIEW_SIZE, gameState.player.y - half));
+
+            dungeonElement.style.setProperty('--view-size', VIEW_SIZE);
+            dungeonElement.style.gridTemplateColumns = `repeat(${VIEW_SIZE}, 192px)`;
+            dungeonElement.style.gridTemplateRows = `repeat(${VIEW_SIZE}, 192px)`;
+
+            for (let y = 0; y < VIEW_SIZE; y++) {
+                for (let x = 0; x < VIEW_SIZE; x++) {
+                    const mapX = offsetX + x;
+                    const mapY = offsetY + y;
                     const cell = document.createElement('div');
                     cell.className = 'cell';
-                    
+
                     // 시야에 가려진 영역
-                    if (gameState.fogOfWar[y][x]) {
+                    if (gameState.fogOfWar[mapY][mapX]) {
                         cell.classList.add('fog');
                     } else {
                         // 플레이어 위치
-                        if (x === gameState.player.x && y === gameState.player.y) {
+                        if (mapX === gameState.player.x && mapY === gameState.player.y) {
                             cell.classList.add('player');
                             cell.textContent = '@';
                         } else {
                             // 다른 던전 요소들
-                            const cellType = gameState.dungeon[y][x];
+                            const cellType = gameState.dungeon[mapY][mapX];
                             cell.classList.add(cellType);
                             
                             switch (cellType) {
@@ -800,7 +813,7 @@
                                     break;
                                 case 'monster':
                                     // 몬스터 타입에 따른 아이콘과 색상
-                                    const monster = gameState.monsters.find(m => m.x === x && m.y === y);
+                                    const monster = gameState.monsters.find(m => m.x === mapX && m.y === mapY);
                                     if (monster) {
                                         cell.textContent = monster.icon;
                                         cell.style.color = monster.color;
