@@ -96,9 +96,8 @@ export class RendererManager {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         this.ctx.save();
         if (this.cameraManager) {
-            // translate first so offset is not affected by scaling
-            this.ctx.translate(this.cameraManager.offsetX, this.cameraManager.offsetY);
             this.ctx.scale(this.cameraManager.scale, this.cameraManager.scale);
+            this.ctx.translate(this.cameraManager.offsetX, this.cameraManager.offsetY);
         }
         this.layerManager.draw(this.ctx);
         this.combatManager.managers.vfxManager.draw(this.ctx);
@@ -111,15 +110,10 @@ export class RendererManager {
         const maxHeight = window.innerHeight;
         const scaleX = maxWidth / (this.CELL_SIZE * this.GRID_COLS);
         const scaleY = maxHeight / (this.CELL_SIZE * this.GRID_ROWS);
-
-        // 가장 큰 비율을 사용해 화면을 가득 채우되 비율을 유지한다
-        const scale = Math.min(scaleX, scaleY);
+        const scale = Math.min(scaleX, scaleY, 1);
         this.cameraManager.scale = scale;
-
-        // 스케일 적용 전 기준에서 중심 오프셋을 계산한다
-        this.cameraManager.offsetX = (maxWidth / scale - this.canvas.width) / 2;
-        this.cameraManager.offsetY = (maxHeight / scale - this.canvas.height) / 2;
-
+        this.cameraManager.offsetX = (maxWidth - this.canvas.width * scale) / 2;
+        this.cameraManager.offsetY = (maxHeight - this.canvas.height * scale) / 2;
         this.canvas.style.width = `${this.canvas.width * scale}px`;
         this.canvas.style.height = `${this.canvas.height * scale}px`;
     }
