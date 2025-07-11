@@ -63,6 +63,7 @@ const rendererManager = new RendererManager(canvas, {
     layerManager: simulationManager.managers.layerManager,
     cameraManager: simulationManager.managers.cameraManager
 });
+animationManager.setCellSize(rendererManager.CELL_SIZE);
 vfxManager.setCellSize(rendererManager.CELL_SIZE);
 
 const renderLoopManager = new RenderLoopManager(rendererManager);
