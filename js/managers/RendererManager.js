@@ -114,8 +114,8 @@ export class RendererManager {
         const scale = Math.min(scaleX, scaleY, 1);
         this.cameraManager.scale = scale;
         this.cameraManager.minScale = scale;
-        this.cameraManager.offsetX = (maxWidth - this.canvas.width * scale) / 2;
-        this.cameraManager.offsetY = (maxHeight - this.canvas.height * scale) / 2;
+        this.cameraManager.offsetX = 0;
+        this.cameraManager.offsetY = 0;
         this.canvas.style.width = `${this.canvas.width * scale}px`;
         this.canvas.style.height = `${this.canvas.height * scale}px`;
     }
