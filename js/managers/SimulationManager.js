@@ -16,9 +16,13 @@ export class SimulationManager {
         this.managers.inputManager = managers.inputManager || new InputManager(
             this.canvas,
             this.managers.cameraManager,
-            { width: 15 * 192, height: 10 * 192 }
+            { width: 15 * 192, height: 10 * 192 },
+            { zoomEnabled: false, dragEnabled: false }
         );
         this.managers.inputManager.init();
+        // 기본적으로 확대/드래그 비활성화
+        this.managers.inputManager.setZoomEnabled(false);
+        this.managers.inputManager.setDragEnabled(false);
         this.backgroundManager = new BackgroundManager(this.managers.imageManager, this.managers.layerManager, this.canvas.width, this.canvas.height);
         // ------------------------------------------
 
