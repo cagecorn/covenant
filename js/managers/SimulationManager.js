@@ -16,7 +16,7 @@ export class SimulationManager {
         this.managers.inputManager = managers.inputManager || new InputManager(
             this.canvas,
             this.managers.cameraManager,
-            { width: 15 * 192, height: 10 * 192 }
+            { width: 15 * 576, height: 10 * 576 }
         );
         this.managers.inputManager.init();
         this.backgroundManager = new BackgroundManager(this.managers.imageManager, this.managers.layerManager, this.canvas.width, this.canvas.height);
@@ -54,14 +54,14 @@ export class SimulationManager {
         this.backgroundCtx.lineWidth = 1;
         for (let i = 0; i <= 15; i++) { // GRID_COLS
             this.backgroundCtx.beginPath();
-            this.backgroundCtx.moveTo(i * 192, 0); // CELL_SIZE
-            this.backgroundCtx.lineTo(i * 192, 10 * 192); // GRID_ROWS * CELL_SIZE
+            this.backgroundCtx.moveTo(i * 576, 0); // CELL_SIZE
+            this.backgroundCtx.lineTo(i * 576, 10 * 576); // GRID_ROWS * CELL_SIZE
             this.backgroundCtx.stroke();
         }
         for (let i = 0; i <= 10; i++) { // GRID_ROWS
             this.backgroundCtx.beginPath();
-            this.backgroundCtx.moveTo(0, i * 192);
-            this.backgroundCtx.lineTo(15 * 192, i * 192); // GRID_COLS * CELL_SIZE
+            this.backgroundCtx.moveTo(0, i * 576);
+            this.backgroundCtx.lineTo(15 * 576, i * 576); // GRID_COLS * CELL_SIZE
             this.backgroundCtx.stroke();
         }
     }

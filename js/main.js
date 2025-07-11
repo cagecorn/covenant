@@ -44,7 +44,7 @@ const cameraManager = new CameraManager();
 const inputManager = new InputManager(
   canvas,
   cameraManager,
-  { width: 15 * 192, height: 10 * 192 }
+  { width: 15 * 576, height: 10 * 576 }
 );
 inputManager.init();
 

@@ -1,5 +1,5 @@
 export class DecorationManager {
-  constructor(bindingManager, cellSize = 192) {
+  constructor(bindingManager, cellSize = 576) {
     this.bindingManager = bindingManager;
     this.cellSize = cellSize;
     this.flagsEnabled = false;
